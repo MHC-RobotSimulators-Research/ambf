@@ -16,9 +16,9 @@ printf "\n AMBF Code Finished Building!\n"
 
 
 
-printf "\n To run the AMBF Controller, follow the setups below:\n"
-printf " (1) Run an external roscore on a seperate terminal.\n"
-printf " (2) Change the world settings in the ambf/ambf_models/descriptions/launch.yaml file to enable the raven_world.yaml.\n"
+printf "\n To run the code, make sure an external roscore is running.\n"
+printf " To run the AMBF Controller, change the world settings in the \n"
+printf " launch.yaml file to enable raven_world.yaml.\n"
 printf " Press any key to continue (ctrl-C to quit)"
 read -n 1 -s -r -p "..."
 
@@ -29,7 +29,8 @@ cd ../bin/lin-x86_64/
 clear
 printf "\n Get ready for the AMBF Simulator. \n"
 printf "\n Current command:\n"
-varname="./ambf_simulator -l 3 -t 1 -p 60 -a ../../ambf_models/descriptions/multi-bodies/sb/heart.yaml,../../ambf_models/descriptions/multi-bodies/environments/Table/table.yaml"
+#varname="./ambf_simulator -l 3 -t 1 -p 60 -a ../../ambf_models/descriptions/multi-bodies/sb/heart.yaml,../../ambf_models/descriptions/multi-bodies/environments/Table/table.yaml"
+varname="./ambf_simulator -l 3"
 echo $varname
 while true; do
 	read -p " Continue? (Y/N or ctrl-C to quit): " yn

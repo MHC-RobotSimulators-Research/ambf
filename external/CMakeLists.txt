@@ -1,6 +1,6 @@
 #  Software License Agreement (BSD License)
-#  Copyright (c) 2003-2016, CHAI3D.
-#  (www.chai3d.org)
+#  Copyright (c) 2019, AMBF.
+#  (www.aimlab.wpi.edu)
 #
 #  All rights reserved.
 #
@@ -16,7 +16,7 @@
 #  disclaimer in the documentation and/or other materials provided
 #  with the distribution.
 #
-#  * Neither the name of CHAI3D nor the names of its contributors may
+#  * Neither the name of authors nor the names of its contributors may
 #  be used to endorse or promote products derived from this software
 #  without specific prior written permission.
 #
@@ -33,11 +33,8 @@
 #  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #
-#  $Author: seb $
-#  $Date: 2016-02-04 22:42:48 +0100 (Thu, 04 Feb 2016) $
-#  $Rev: 2015 $
+#  $Author: Adnan Munawar $
+#  $Date:  $
+#  $Rev: $
 
-
-MAJOR=3
-MINOR=2
-RELEASE=0
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/tf_function)
