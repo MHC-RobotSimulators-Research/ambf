@@ -1,6 +1,16 @@
 # Asynchronous Multi-Body Framework (AMBF)
 ### Author: [Adnan Munawar](https://github.com/adnanmunawar) (amunawar@wpi.edu)
 
+# NOTE:
+# ambf-1.0 is the active development branch with many new features so please feel free to check it out.
+```bash
+git checkout -b ambf-1.0 origin/ambf-1.0
+cd <ambf>/build
+cmake ..
+make
+```
+
+
 #### Contributors:
 1. [Melody Su](https://github.com/melodysu83) (Email: msu@mtholyoke.edu)
 
@@ -23,6 +33,17 @@ external tools that include an extended version of CHAI-3D (developed along-side
 AMBF has been tested on **Ubuntu 16.04** and **Ubuntu 18.04**. We need a few extra steps on **Ubuntu 14.04**, please create an issue if you would like to get instructions for that. 
 
 Even though it is recommended to use Linux for the full feature set of AMBF Simulator using ROS, AMBF has been tested on **MacOS Maverick** and **MacOS Mojave** without ROS support. 
+
+### AMBF Network Setup:
+In order to subscribe and publish data using AMBF over multiple machines, the following steps would need to be followed:
+1. Check the connectivity between the machines (example: using ssh and ping)
+2. Edit the `/etc/hosts` and add the hostnames of the machines, so that the machines can find each other over the network (example: similar to [Adding host name to /etc/hosts](https://www.howtogeek.com/howto/27350/beginner-geek-how-to-edit-your-hosts-file/))
+3. Set the ROS environment variable in local machine to the host using `export ROS_MASTER_URI=http://hostIPaddress:11311` (ex: export ROS_MASTER_URI=http://112.115.256.121:11311)
+4. Now you should be able to send and receive ROS messages over the two machines and control AMBF. 
+5. If you face any firewall issues or if you are unable to receive/publish any ROS topics over the two machines, follow the next step.
+6. Open a terminal and type the command:  `sudo apt-get install gufw` 
+7. Next type `sudo gufw` (type the password when prompted) and ensure both the Incoming and Outgoing traffic is allowed.
+
 
 ### Building:
 On Linux machines, you might need to install the `libasound2-dev` package and external libraries dependencies.
@@ -64,6 +85,20 @@ While in the build folder, you can run:
 You can also permanently add the install location in your .bashrc with the following command:
 
 `echo "source ~/ambf/build/devel/setup.bash" >> ~/.bashrc`
+
+### Docker
+
+In order to use the docker file, follow the instructions [here](https://docs.docker.com/install/) to install docker on your system. To run the file:  
+
+```bash
+cd ~/
+git clone https://github.com/WPI-AIM/ambf.git && cd ambf
+sudo service docker start
+docker build --rm -f "Dockerfile" -t ambf:latest "."
+docker run --rm -it  ambf:latest
+cd /ambf/bin/lin-x86_64/
+./ambf_simulator -g off
+```
 
 ### Running the Simulator:
 Having succesfully completed the steps above running is Simulator is easy. Depending
