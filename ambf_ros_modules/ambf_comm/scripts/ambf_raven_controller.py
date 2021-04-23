@@ -7,9 +7,11 @@ import math
 import numpy as np
 import ambf_raven as arav
 
-# index 0 --> home
-# index 1 --> sine_dance
-# index 2 --> Quit
+
+'''
+author: Sean
+ambf_raven_controller is a Client for operating the ambf_raven simulated robot
+'''
 
 
 def control_reset():

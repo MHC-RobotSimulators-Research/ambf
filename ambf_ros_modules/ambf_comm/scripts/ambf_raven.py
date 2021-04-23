@@ -3,6 +3,11 @@ from ambf_client import Client
 import math
 import numpy as np
 
+'''
+author: Sean Fabrega
+ambf_raven defines methods for an ambf_raven robot, including homnig, sine dance and hoping soon
+cube tracing and soft body manipulation'''
+
 class ambf_raven:
     def __init__(self):
         self._client = Client()
