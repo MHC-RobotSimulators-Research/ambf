@@ -225,8 +225,9 @@ for i in range(loop_rate):
 	else:
 		homed[0] = go_home(0, 1, i)
 		homed[1] = go_home(0, 0, i)
-	time.sleep(0.01)
 
+	time.sleep(0.01)
+print(homed_l, homed_r)
 
 if not homed[0] or not homed[1]:
 	print('\n\n----')
