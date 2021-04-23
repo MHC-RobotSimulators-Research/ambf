@@ -104,7 +104,7 @@ Right Children:
 	grasper2_R --> 6	
 '''
 print('\n\n----')
-raw_input("Control Left joint positions. Press Enter to continue...")
+raw_input("Home Raven2?")
 '''
 l_handle.set_joint_pos(0,0)
 l_handle.set_joint_pos(1,0)
@@ -192,34 +192,32 @@ def go_home(first_entry, arm, count):
 
 test_neg_pos = np.array([0,0])
 
-def sine_dance(first_entry, arm, count, rampup_count):
+def sine_dance(first_entry, arm, count, rampup_count): #raven_2 MUST BE HOMED
 	speed = 1.00/loop_rate
-	rampup_speed = 0.05/loop_rate
+	rampup_speed = 0.5/loop_rate
 	if not arm:
 		state = l_handle
 	else:
 		state = r_handle
 
-	if (not homed[arm]):
-		go_home(first_entry, arm, count)
-		
-	else:
-		for i in range(raven_joints):
-			offset = (i+arm)*math.pi/2
-			#print("offset = " + str(offset))
-			rampup = min(rampup_speed*rampup_count[arm], 1.0)
-			#print("rampup = " + str(rampup))
-			state.set_joint_pos(i, rampup*dance_scale_joints[i]*math.sin(speed*count+offset)+home_joints[i])
-			#print("movement for joint " + str(i) + " = " + str(rampup*dance_scale_joints[i]*math.sin(speed*count+offset)))
-			rampup_count[arm] += 1
+	for i in range(raven_joints):
+		offset = (i+arm)*math.pi/2
+		#print("offset = " + str(offset))
+		rampup = min(rampup_speed*rampup_count[arm], 1.0)
+		#print("rampup = " + str(rampup))
+		state.set_joint_pos(i, rampup*dance_scale_joints[i]*math.sin(speed*(count+offset))+home_joints[i])
+		#if(i == 0):
+		#	print("actual joint position = " + str(state.get_joint_pos(0)))
+		#	print("commanded join position = " + str(dance_scale_joints[0]*math.sin(speed*(count+offset))+home_joints[0]))
+		rampup_count[arm] += 1
 
 
 
 
 
 #updates joint position
-'''
-i = 0
+
+
 for i in range(loop_rate):
 	if not i:
 		homed[0] = go_home(1, 1, i)
@@ -228,32 +226,30 @@ for i in range(loop_rate):
 		homed[0] = go_home(0, 1, i)
 		homed[1] = go_home(0, 0, i)
 	time.sleep(0.01)
-	i += 1
-print(homed)
-print(i)
 
-'''
 
-print('\n\n----')
-raw_input("Sine dance?")
-rc = [0,0]
-rampup_count = np.array(rc)
-i = 0
-k = 0
-while i <= loop_rate:
-	if not i:
-		sine_dance(1, 1, k, rampup_count)
-		sine_dance(1, 0, k, rampup_count)
-		k += 1
-		if homed:
-			i += 1
-	else:
-		sine_dance(0, 1, i, rampup_count)
-		sine_dance(0, 0, i, rampup_count)
+if not homed[0] or not homed[1]:
+	print('\n\n----')
+	print("Error: Raven Not Homed")
+
+else:
+	print('\n\n----')
+	raw_input("Sine dance?")
+	rc = [0,0]
+	rampup_count = np.array(rc)
+	i = 0
+	quit = 0
+	while True:
+		if i == 0:
+			sine_dance(1, 1, i, rampup_count)
+			sine_dance(1, 0, i, rampup_count)
+		else:
+			sine_dance(0, 1, i, rampup_count)
+			sine_dance(0, 0, i, rampup_count)
 		i += 1
-	time.sleep(0.01)
-	#print("left joint pos = " + str(l_handle.get_all_joint_pos()))
-	#print("right joint pos = " + str(r_handle.get_all_joint_pos()))
+		time.sleep(0.01)
+		#print("left joint pos = " + str(l_handle.get_all_joint_pos()))
+		#print("right joint pos = " + str(r_handle.get_all_joint_pos()))
 
 #clean up
 
