@@ -1,5 +1,6 @@
 import multiprocessing
 import sys
+sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 import os
 import time
 from ambf_client import Client
