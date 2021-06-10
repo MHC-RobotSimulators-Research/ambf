@@ -2,6 +2,7 @@ import time
 from ambf_client import Client
 import math
 import numpy as np
+import ambf_raven_def as ard
 
 '''
 author: Sean Fabrega
@@ -22,10 +23,10 @@ class ambf_raven:
         self.arms = [self._client.get_obj_handle('raven_2/base_link_L'), self._client.get_obj_handle('raven_2/base_link_R')]
         self.start_jp = np.zeros((2,7)) #indexed at 0
         self.delta_jp = np.zeros((2,7))
-        self.home_joints = [math.pi/3, math.pi*3/5, -0.09, math.pi*3/4, 0, math.pi/6, math.pi/6]
-        self.dance_scale_joints = [0.3, 0.3, 0.06, 0.3, 1.2, math.pi/6, math.pi/6]
-        self.loop_rate = 1000
-        self.raven_joints = 7
+        self.home_joints = ard.home_joints
+        self.dance_scale_joints = ard.dance_scale_joints
+        self.loop_rate = ard.raven_loop_rateS
+        self.raven_joints = ard.raven_joints
         self.rc = [0,0]
         self.rampup_count = np.array(self.rc)
         self.i = 0
