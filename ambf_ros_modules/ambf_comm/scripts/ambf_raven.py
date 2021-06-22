@@ -25,7 +25,7 @@ class ambf_raven:
         self.delta_jp = np.zeros((2,7))
         self.home_joints = ard.home_joints
         self.dance_scale_joints = ard.dance_scale_joints
-        self.loop_rate = ard.raven_loop_rateS
+        self.loop_rate = ard.raven_loop_rate
         self.raven_joints = ard.raven_joints
         self.rc = [0,0]
         self.rampup_count = np.array(self.rc)

@@ -78,10 +78,13 @@ def convert_mat_to_frame(mat):
     return frame
 
 def get_Origin(T_matrix):
-    origin = np.zeros((3,1))
-    origin = T_matrix[:,3]
-    origin[-1] = 0
+    origin = T_matrix[:3,3]
     return origin
+
+def get_Basis(T_matrix):
+    basis = np.zeros((3,3))
+    basis = T_matrix[0:2,0:2]
+    return basis
 
 def normalize(numpyVec3):
     return numpyVec3 / np.linalg.norm(numpyVec3) #why are we getting zeroes for the z coord?

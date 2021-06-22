@@ -1,61 +1,88 @@
+from ambf_raven_def import *
+import math as m
 import numpy as np
-import utilities as u
-import kinematics as k
-import ambf_raven_def as ard
 
-def compute_FK(joint_pos, arm):
-    j = [0, 0, 0, 0, 0, 0, 0, 0]
-    for i in range(len(joint_pos)):
-        j[i] = joint_pos[i]
+def joint_to_dhvalue(joint, arm):
+    success = False
+    dhvalue = np.zeros(6, dtype = 'float')
+    if arm < 0 or arm >= RAVEN_ARMS or joint.size != RAVEN_JOINTS:
+        return success
+    for i in range(RAVEN_JOINTS - 1):
+        if i != 2:
+            if i == 5:
+                if arm == 0:
+                    dhvalue[i] =  (joint[i] - joint[i+1])
+                else:
+                    dhvalue[i] = -(joint[i] - joint[i+1])
+            else:
+                dhvalue[i] = joint[i]
+                while dhvalue[i] > m.pi:
+                    dhvalue[i] -= 2*m.pi
+                while dhvalue[i] < -m.pi:
+                    dhvalue[i] += 2*m.pi
+        else:
+            dhvalue[i] = joint[i]
+    success = True
 
-    #Raven2 DH Parameters
-    joint0 = k.DH(ard.raven_dh_alpha[arm][0],
-                 ard.raven_dh_a[arm][0],
-                 ard.raven_dh_theta[arm][0],
-                 ard.raven_dh_d[arm][0],
-                 joint_type = 'R')
-    joint1 = k.DH(ard.raven_dh_alpha[arm][1],
-                 ard.raven_dh_a[arm][1],
-                 ard.raven_dh_theta[arm][1],
-                 ard.raven_dh_d[arm][1],
-                 joint_type = 'R')
-    joint2 = k.DH(ard.raven_dh_alpha[arm][2],
-                 ard.raven_dh_a[arm][2],
-                 ard.raven_dh_theta[arm][2],
-                 ard.raven_dh_d[arm][2],
-                 joint_type = 'P')
-    joint3 = k.DH(ard.raven_dh_alpha[arm][3],
-                 ard.raven_dh_a[arm][3],
-                 ard.raven_dh_theta[arm][3],
-                 ard.raven_dh_d[arm][3],
-                 joint_type = 'R')
-    joint4 = k.DH(ard.raven_dh_alpha[arm][4],
-                 ard.raven_dh_a[arm][4],
-                 ard.raven_dh_theta[arm][4],
-                 ard.raven_dh_d[arm][4],
-                 joint_type = 'R')
-    joint5 = k.DH(ard.raven_dh_alpha[arm][5],
-                 ard.raven_dh_a[arm][5],
-                 ard.raven_dh_theta[arm][5],
-                 ard.raven_dh_d[arm][5],
-                 joint_type = 'R')
-    joint6 = k.DH(ard.raven_dh_alpha[arm][6],
-                 ard.raven_dh_a[arm][6],
-                 ard.raven_dh_theta[arm][6],
-                 ard.raven_dh_d[arm][6],
-                 joint_type = 'R')
-    T_1_0 = joint0.get_trans()
-    T_2_1 = joint1.get_trans()
-    T_3_2 = joint2.get_trans()
-    T_4_3 = joint3.get_trans()
-    T_5_4 = joint4.get_trans()
-    T_6_5 = joint5.get_trans()
+    return success, dhvalue
 
-    T_2_0 = np.matmul(T_1_0, T_2_1)
-    T_3_0 = np.matmul(T_2_0, T_3_2)
-    T_4_0 = np.matmul(T_3_0, T_4_3)
-    T_5_0 = np.matmul(T_4_0, T_5_4)
-    T_6_0 = np.matmul(T_5_0, T_6_5)
+def fwd_trans(a, b, dh_alpha, dh_theta, dh_a, dh_d):
+    if ((b <= a) or b == 0):
+        ROS_ERROR("Invalid start/end indices")
 
+    xx = float(m.cos(dh_theta[a]))
+    xy = float(-m.sin(dh_theta[a]))
+    xz = float(0)
 
-    return ard.raven_T_CB * ard.raven_T_B0[arm] * T_6_0
+    yx = float(m.sin(dh_theta[a])) * float(m.cos(dh_alpha[a]))
+    yy = float(m.cos(dh_theta[a])) * float(m.cos(dh_alpha[a]))
+    yz = float(-m.sin(dh_alpha[a]))
+
+    zx = float(m.sin(dh_theta[a])) * float(m.sin(dh_alpha[a]))
+    zy = float(m.cos(dh_theta[a])) * float(m.sin(dh_alpha[a]))
+    zz = float(m.cos(dh_alpha[a]))
+
+    px = float(dh_a[a])
+    py = float(-m.sin(dh_alpha[a])) * float(dh_d[a])
+    pz = float(m.cos(dh_alpha[a])) * float(dh_d[a])
+
+    xf = np.matrix([[xx, xy, xz, px],
+                    [yx, yy, yz, py],
+                    [zx, zy, zz, pz],
+                    [0, 0, 0, 1]])
+
+    if b < a + 1:
+        xf *= fwd_trans(a + 1, b, dh_alpha, dh_theta, dh_a, dh_d)
+
+    return xf
+
+def fwd_kinematics(arm, input_joint_pos):
+    success = False
+
+    dh_alpha = np.zeros(6, dtype = 'float')
+    dh_theta = np.zeros(6, dtype = 'float')
+    dh_a = np.zeros(6, dtype = 'float')
+    dh_d = np.zeros(6, dtype = 'float')
+
+    j2d = joint_to_dhvalue(input_joint_pos, arm)
+    worked = j2d[0]
+    jp_dh = j2d[1]
+
+    if worked == False:
+        ROS_ERROR("Something went wrong with joint to dh conversion")
+        return success
+    for i in range(RAVEN_JOINTS - 1):
+        if i == 2:
+            dh_d[i] = jp_dh[i]
+            dh_theta[i] = RAVEN_DH_THETA[arm][i]
+        else:
+            dh_d[i] = RAVEN_DH_D[arm][i]
+            dh_theta[i] = jp_dh[i]
+        dh_alpha[i] = RAVEN_DH_ALPHA[arm][i]
+        dh_a[i] = RAVEN_DH_A[arm][i]
+    output_transformation = RAVEN_T_CB * RAVEN_T_B0[arm] * fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d)
+
+    return output_transformation
+
+if __name__ == '__main__':
+    print(fwd_kinematics(0, HOME_JOINTS))
