@@ -83,7 +83,7 @@ def get_Origin(T_matrix):
 
 def get_Basis(T_matrix):
     basis = np.zeros((3,3))
-    basis = T_matrix[0:2,0:2]
+    basis = T_matrix[0:3,0:3]
     return basis
 
 def normalize(numpyVec3):

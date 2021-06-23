@@ -1,5 +1,5 @@
 from ambf_raven_def import *
-from raven_fk import fwd_kinematics
+from raven_fk import fwd_kinematics, fwd_trans
 import math as m
 import numpy as np
 import utilities as u
@@ -17,8 +17,8 @@ def inv_kinematics(arm, input_cp, input_gangle):
     # contextualizing the location of the tip of raven with respect to the outer plane of existence
 
     # xf = T_0_6, one per arm
-    T_0_6 = np.linalg.inv(RAVEN_T_CB * RAVEN_T_B0[arm]) * input_cp
-    iksol = np.zeros((RAVEN_IKSOLS, RAVEN_JOINTS - 1))
+    T_0_6 = np.matmul(np.linalg.inv(np.matmul(RAVEN_T_CB, RAVEN_T_B0[arm])), input_cp)
+    iksol = np.zeros((RAVEN_IKSOLS, RAVEN_JOINTS))
     ikcheck = np.zeros(RAVEN_IKSOLS)
 
     dh_alpha = np.zeros(6) # known
@@ -34,20 +34,19 @@ def inv_kinematics(arm, input_cp, input_gangle):
         dh_a[i]     = RAVEN_DH_A[arm][i]
 
     for i in range(RAVEN_IKSOLS):
-        iksol[i]   = np.zeros(RAVEN_JOINTS - 1) # 6 length cannot accomodate length 7 vector??? if problem, create zero_joints length 6
+        iksol[i]   = np.zeros(RAVEN_JOINTS) # 6 length cannot accomodate length 7 vector??? if problem, create zero_joints length 6
         ikcheck[i] = True # flag whether particular set of joints are legal or checking eventually the closest one
 
     # STEP 1: Comput P5
     T_6_0 = np.linalg.inv(T_0_6) # T60 --> the 0th frame in terms of the 6th frame
-    p6rcm = u.get_Origin(T_6_0) # x, y, z  rcm stands for remote center of motion
-    p05   = np.zeros((8, 3))
+    p6rcm = np.ones((4,1), dtype = 'float')
+    p6rcm[:3] = u.get_Origin(T_6_0) # x, y, z  rcm stands for remote center of motion
+    p05   = np.ones((8, 4))
     p6rcm[2] = 0 # takes projection on x,y plane
 
     for i in range(2):
-        p65 = (-1 + 2 * i) * RAVEN_IKIN_PARAM[5] * np.linalg.norm(p6rcm) # finds the position of the 5th joint with respect to the 6th joint
-        print(np.linalg.inv(RAVEN_T_CB * RAVEN_T_B0[arm]))
-        print(np.linalg.inv(RAVEN_T_CB * RAVEN_T_B0[arm]) * input_cp)
-        p05[4 * i] = p05[4 * i + 1] = p05[4 * i + 2] = p05[4 * i + 3] = T_0_6 * p65
+        p65 = (-1 + 2 * i) * RAVEN_IKIN_PARAM[5] * (p6rcm / np.linalg.norm(p6rcm)) # finds the position of the 5th joint with respect to the 6th joint
+        p05[4 * i][:3] = p05[4 * i + 1][:3] = p05[4 * i + 2][:3] = p05[4 * i + 3][:3] = np.matmul(T_0_6, p65)[:3].squeeze()
     # now we have two unique solutions
 
     # STEP 2: Computing the prismatic joint j3
@@ -71,7 +70,7 @@ def inv_kinematics(arm, input_cp, input_gangle):
 		# now we have 4 unique solutions
 
     # STEP 3: Evaluate Theta 2
-    for i in range(RAVEN_IKSOLS): # now we have to look at 4 unique solutions
+    for i in range(RAVEN_IKSOLS - 1): # now we have to look at 4 unique solutions
         z0p5 = float(p05[i][2]); # <-- zth position of the 5th joint with respect to the 0th joint
         d = float(iksol[i][2] + RAVEN_IKIN_PARAM[4])
         cth2_nom = float(( z0p5 / d) + RAVEN_IKIN_PARAM[1] * RAVEN_IKIN_PARAM[3])
@@ -110,7 +109,8 @@ def inv_kinematics(arm, input_cp, input_gangle):
             Bmx = np.matrix([[BB1,  BB2, 0],
                              [BB2, -BB1, 0],
                              [  0,    0, 1]])
-        scth1 = np.linalg.inv(Bmx) * xyp05 * (1 / d)
+        scth1 = np.ones(4, dtype = 'float')
+        scth1[:3] = np.matmul(xyp05[:3], np.linalg.inv(Bmx)) * (1 / d)
         iksol[i][0] = m.atan2(scth1[1], scth1[0])
 
     # STEP 5: Compute Theta 4, 5, 6
@@ -123,16 +123,18 @@ def inv_kinematics(arm, input_cp, input_gangle):
         dh_d[2]     = iksol[i][2]
 
         T_0_3 = fwd_trans(0, 3, dh_alpha, dh_theta, dh_d, dh_a)
-        T_3_6 = np.linalg.inv(T_0_3) * T_0_6
-        c5 = - float(u.get_Basis(T_3_6)[2][2])
-        s5 = float(u.get_Origin(T_3_6)[2] - RAVEN_IKIN_PARAM[4]) / float(RAVEN_IKIN_PARAM[5])
+        T_3_6 = np.matmul(np.linalg.inv(T_0_3), T_0_6)
+        T_3_6_B = u.get_Basis(T_3_6)
+        T_3_6_O = u.get_Origin(T_3_6)
+        c5 = -float(T_3_6_B[2,2])
+        s5 = float(T_3_6_O[2] - RAVEN_IKIN_PARAM[4]) / float(RAVEN_IKIN_PARAM[5])
 
         if m.fabs(c5) > Eps:
-            c4 = float(u.get_Origin(T_3_6)[0]) / float(RAVEN_IKIN_PARAM[5] * c5)
-            s4 = float(u.get_Origin(T_3_6)[1]) / float(RAVEN_IKIN_PARAM[5] * c5)
+            c4 = float(T_3_6_O[0]) / float(RAVEN_IKIN_PARAM[5] * c5)
+            s4 = float(T_3_6_O[1]) / float(RAVEN_IKIN_PARAM[5] * c5)
         else:
-            c4 = u.get_Basis(T_3_6)[0][2] / s5
-            s4 = u.get_Basis(T_3_6)[1][2] / s5
+            c4 = T_3_6_B[0][2] / s5
+            s4 = T_3_6_B[1][2] / s5
         iksol[i][3] = m.atan2(s4, c4)
 
     return iksol
@@ -201,10 +203,10 @@ def find_best_solution(curr_jp, iksol, ikcheck):
     return best_err, best_idx
 
 if __name__ == '__main__':
-    T = fwd_kinematics(0, HOME_JOINTS)
+    T = fwd_kinematics(1, HOME_JOINTS)
     print("T = ")
     print(T)
     print(" ")
-    iksol = inv_kinematics(0, T, 0)
+    iksol = inv_kinematics(1, T, 0)
     print("iksol = ")
     print(iksol)
