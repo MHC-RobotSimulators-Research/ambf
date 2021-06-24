@@ -1,8 +1,8 @@
 //===========================================================================
 /*
     Software License Agreement (BSD License)
-    Copyright (c) 2020, AMBF
-    (https://github.com/WPI-AIM/ambf)
+    Copyright (c) 2019, AMBF
+    (www.aimlab.wpi.edu)
 
     All rights reserved.
 
@@ -37,7 +37,7 @@
 
     \author:    Melody Su
     \date:      April, 2019
-    \version:   1.0$
+    \version:   $
 */
 //===========================================================================
 
@@ -250,6 +250,7 @@ bool AMBFRavenPlanner::check_incr_safety(vector<float> curr_raw, vector<float>& 
  */
 bool AMBFRavenPlanner::fwd_kinematics(int arm, vector<float> input_jp, tf::Transform& output_cp)
 {
+	cout << "Performing fwd_kin...";
 	bool success = false;
 
 	vector<float> dh_alpha(6);
@@ -282,9 +283,13 @@ bool AMBFRavenPlanner::fwd_kinematics(int arm, vector<float> input_jp, tf::Trans
 		dh_alpha[i] = AMBFDef::raven_dh_alpha[arm][i];
 		dh_a[i] = AMBFDef::raven_dh_a[arm][i];
 	}
+	for (int i = 0; i < 6; i++){
+		cout << "jp_dh " << i << " " << jp_dh[i];
+	}
 
 	// computes forward kinematics
 	output_cp = AMBFDef::raven_T_CB * AMBFDef::raven_T_B0[arm] * fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d);
+	cout << output_cp;
 
 	success = true;
 	return success;
@@ -382,6 +387,10 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		tf::Vector3 p65 = (-1 + 2 * i) * AMBFDef::raven_ikin_param [5] * p6rcm.normalize();
 		p05[4 * i] = p05[4 * i + 1] = p05[4 * i + 2] = p05[4 * i + 3] = xf * p65;
 	}
+	cout << "p05 = ";
+	for (int i = 0; i < 8; i++){
+		cout << p05[i];
+	}
 
 	//  Step 2, compute displacement of prismatic joint d3
 	for (int i = 0; i < AMBFDef::raven_iksols/4; i++)
@@ -401,6 +410,13 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		}
 		iksol[4 * i + 0][2] = iksol[4 * i + 1][2] = -AMBFDef::raven_ikin_param[4] - insertion;
 		iksol[4 * i + 2][2]= iksol[4 * i + 3][2] = -AMBFDef::raven_ikin_param[4] + insertion;
+	}
+	cout << "iksol after step 2= "
+	for (int i = 0; i < 8; i++){
+		for (int j = 0; j < 7; j++){
+			cout << iksol[i][j];
+		}
+		cout << endl;
 	}
 
 	//  Step 3, calculate theta 2
@@ -431,6 +447,14 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		  iksol[i + 1][1] = -acos(cth2);
 		}
 	}
+	cout << "iksol after step 3";
+	for (int i = 0; i < 8; i++){
+		for (int j = 0; j < 7; j++){
+			cout << iksol[i][j];
+		}
+		cout << endl;
+	}
+
 
 	//  Step 4: Compute theta 1
 	for (int i = 0; i < AMBFDef::raven_iksols; i++)
@@ -456,6 +480,14 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 
 		tf::Vector3 scth1 = Bmx.inverse() * xyp05 * (1 / d);
 		iksol[i][0] = atan2(scth1[1], scth1[0]);
+	}
+
+	cout << "iksol after step 4";
+	for (int i = 0; i < 8; i++){
+		for (int j = 0; j < 7; j++){
+			cout << iksol[i][j];
+		}
+		cout << endl;
 	}
 
 	//  Step 5: get theta 4, 5, 6
@@ -487,9 +519,24 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 			s4 = T36.getBasis()[1][2] / s5;
 		}
 		iksol[i][3] = atan2(s4, c4);
+		cout << "iksol after computing theta 4 " << endl;
+		for (int i = 0; i < 8; i++){
+			for (int j = 0; j < 7; j++){
+				cout << iksol[i][j];
+			}
+			cout << endl;
+		}
 
 		// Compute theta 5:
 		iksol[i][4] = atan2(s5, c5);
+		cout << "iksol after computing theta 5 " << endl;
+		for (int i = 0; i < 8; i++){
+			for (int j = 0; j < 7; j++){
+				cout << iksol[i][j];
+			}
+			cout << endl;
+		}
+
 
 		// Compute theta 6:
 		float s6, c6;
@@ -508,6 +555,21 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 			s6 = T56.getBasis()[2][0];
 		}
 		iksol[i][5] = atan2(s6, c6);
+		cout << "iksol after computing theta 6" << endl;
+		for (int i = 0; i < 8; i++){
+			for (int j = 0; j < 7; j++){
+				cout << iksol[i][j];
+			}
+			cout << endl;
+		}
+	}
+
+	cout << "iksol after computing all theta values" << endl;
+	for (int i = 0; i < 8; i++){
+		for (int j = 0; j < 7; j++){
+			cout << iksol[i][j];
+		}
+		cout << endl;
 	}
 
 	vector<float> jp_dh(6); // current joint angles
@@ -518,12 +580,16 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		return success;
 	}
 
+	cout << "current dh vals for home" << endl;
+	cout << jp_dh
+
 	int sol_idx;
 	float sol_err;
 
 	if(find_best_solution(jp_dh, iksol, ikcheck, sol_idx, sol_err))
 	{
 		bool limited = dhvalue_to_joint(iksol[sol_idx], output_jp, input_gangle, arm);
+		cout << "iksol best sol = " << iksol[sol_idx] << endl;
 
 		// adjust desired cartesian positions if necessary
 		if(limited)
@@ -531,6 +597,8 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		  fwd_kinematics(arm, output_jp, xf);
 		  input_cp = xf;
 		}
+
+		cout << "jp solution " << output_jp << endl;
 
 		success = true;
 	}
