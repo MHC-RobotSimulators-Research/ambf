@@ -16,11 +16,11 @@ ambf_raven_controller is a Client for operating the ambf_raven simulated robot
 
 
 def control_reset():
-    new_control = [False, False, False]
+    new_control = [False, False, False, False]
     return new_control
 
 def do(q, raven):
-        control = [False, False, False]
+        control = [False, False, False, False]
         while not control[2]:
             if not q.empty():
                 control = q.get()
@@ -49,12 +49,37 @@ def do(q, raven):
                         control = q.get()
                 raven.i += 1
                 time.sleep(0.01)
+            while control[3] and not any(raven.moved):
+                #move in x direction:
+                print("Welcome to the Raven2 AMBF Manual Control Mode")
+                x = [0.11,0.0]
+                y = [0.0, 0.0]
+                z = [0.0,0.0]
+                raven.manual_move(0, x[0], y[0], z[0], 0)
+                raven.manual_move(1, x[1], y[1], z[1], 0)
+                # print(int(raven.loop_rate * np.max([x[0], x[1], y[0], y[1], z[0], z[1]])))
+                for i in range(raven.loop_rate):
+                    if not i:
+                        print("moving 0.02 in the x direction...")
+                        raven.moved[0] = raven.move(1, 1, i)
+                        raven.moved[1] = raven.move(1, 0, i)
+                    else:
+                        raven.moved[0] = raven.move(0, 1, i)
+                        raven.moved[1] = raven.move(0, 0, i)
+                    time.sleep(0.01)
+                if raven.moved[0] and raven.moved[1]:
+                    print("Raven has moved!")
+                if not q.empty():
+                    control = q.get()
+
+
+
         print("shutting down...\n")
         os.system('kill %d' % os.getpid())
         exit(0)
 
 def get_input(q, stdin):
-    control = [False, False, False]
+    control = [False, False, False, False]
     sys.stdin = stdin
     print("Input Menu:\n")
     print("input 'h' for home\n")
@@ -74,6 +99,12 @@ def get_input(q, stdin):
         elif userinput == 's':
             print("doing sine dance...")
             control[1] = True
+            q.put(control)
+            userinput = raw_input("Input key to switch control modes\n")
+            continue
+        elif userinput == 'm':
+            print("entering manual control mode...")
+            control[3] = True
             q.put(control)
             userinput = raw_input("Input key to switch control modes\n")
             continue

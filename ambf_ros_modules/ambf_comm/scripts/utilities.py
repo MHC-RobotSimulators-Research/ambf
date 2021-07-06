@@ -81,6 +81,11 @@ def get_Origin(T_matrix):
     origin = T_matrix[:3,3]
     return origin
 
+def set_Origin(T_matrix, x, y, z):
+    T_matrix[0,3] = x
+    T_matrix[1,3] = y
+    T_matrix[2,3] = z
+
 def get_Basis(T_matrix):
     basis = np.zeros((3,3))
     basis = T_matrix[0:3,0:3]

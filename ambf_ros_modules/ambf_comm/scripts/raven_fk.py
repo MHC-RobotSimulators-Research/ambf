@@ -4,10 +4,10 @@ import numpy as np
 
 def joint_to_dhvalue(joint, arm):
     success = False
-    dhvalue = np.zeros(6, dtype = 'float')
+    dhvalue = np.zeros(7, dtype = 'float')
     if arm < 0 or arm >= RAVEN_ARMS or joint.size != RAVEN_JOINTS:
         return success
-    for i in range(RAVEN_JOINTS - 1):
+    for i in range(RAVEN_JOINTS):
         if i != 2:
             if i == 5:
                 if arm == 0:
@@ -51,18 +51,19 @@ def fwd_trans(a, b, dh_alpha, dh_theta, dh_a, dh_d):
                     [zx, zy, zz, pz],
                     [0, 0, 0, 1]])
 
-    if b < a + 1:
-        xf *= fwd_trans(a + 1, b, dh_alpha, dh_theta, dh_a, dh_d)
+    if b > a + 1:
+        xf = np.matmul(xf, fwd_trans(a + 1, b, dh_alpha, dh_theta, dh_a, dh_d))
 
     return xf
 
 def fwd_kinematics(arm, input_joint_pos):
     success = False
+    # print(input_joint_pos)
 
-    dh_alpha = np.zeros(6, dtype = 'float')
-    dh_theta = np.zeros(6, dtype = 'float')
-    dh_a = np.zeros(6, dtype = 'float')
-    dh_d = np.zeros(6, dtype = 'float')
+    dh_alpha = np.zeros(7, dtype = 'float')
+    dh_theta = np.zeros(7, dtype = 'float')
+    dh_a = np.zeros(7, dtype = 'float')
+    dh_d = np.zeros(7, dtype = 'float')
 
     j2d = joint_to_dhvalue(input_joint_pos, arm)
     worked = j2d[0]
@@ -71,7 +72,7 @@ def fwd_kinematics(arm, input_joint_pos):
     if worked == False:
         ROS_ERROR("Something went wrong with joint to dh conversion")
         return success
-    for i in range(RAVEN_JOINTS - 1):
+    for i in range(RAVEN_JOINTS):
         if i == 2:
             dh_d[i] = jp_dh[i]
             dh_theta[i] = RAVEN_DH_THETA[arm][i]
@@ -80,9 +81,21 @@ def fwd_kinematics(arm, input_joint_pos):
             dh_theta[i] = jp_dh[i]
         dh_alpha[i] = RAVEN_DH_ALPHA[arm][i]
         dh_a[i] = RAVEN_DH_A[arm][i]
-    output_transformation = RAVEN_T_CB * RAVEN_T_B0[arm] * fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d)
+    # print("dh alpha")
+    # print(dh_alpha)
+    # print("dh theta")
+    # print(dh_theta)
+    # print("dh d")
+    # print(dh_d)
+    # print("dh a")
+    # print(dh_a)
+    output_transformation = np.matmul(np.matmul(RAVEN_T_CB, RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
+
+    # print("output trans")
+    # print(output_transformation)
 
     return output_transformation
 
-if __name__ == '__main__':
-    print(fwd_kinematics(0, HOME_JOINTS))
+# if __name__ == '__main__':
+#     input = np.array([-0.912269, -0.895033, 0.1, 1.72894, 2.01052, 0.175678, -0.101728])
+#     fwd_kinematics(0, input)

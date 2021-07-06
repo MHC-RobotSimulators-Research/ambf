@@ -1,6 +1,7 @@
 import math as m
 import numpy as np
 import sys
+import quaternion
 
 # Copied from https://github.com/WPI-AIM/ambf/blob/restructure/ambf_controller/raven2/src/ambf_defines.cpp
 
@@ -19,8 +20,8 @@ MIN_JOINTS         = np.array([ -m.pi,        -m.pi, -0.17,           -m.pi,  -2
 HOME_JOINTS        = np.array([m.pi/3, (m.pi * 3)/5, -0.09,    (m.pi * 3)/4,   0,       m.pi/6,       m.pi/6],  dtype = 'float')
 DANCE_SCALE_JOINTS = np.array([   0.3,          0.3,  0.06,             0.3, 1.2,       m.pi/6,       m.pi/6],  dtype = 'float')
 
-RAVEN_JOINT_LIMITS = np.array([[     0, np.deg2rad(-75), np.deg2rad(128),     0, m.pi/2, m.pi/2, 0],
-                               [  m.pi,  np.deg2rad(75),  np.deg2rad(52),     0, m.pi/2, m.pi/2, 0]], dtype = 'float')
+RAVEN_JOINT_LIMITS = np.array([[    0.0,          m.pi/4,           -0.17, -m.pi*2, -2, -2, -2],
+                               [m.pi/2, (m.pi*3)/4, 0.1, m.pi*2, 2, 2, 2]])
 RAVEN_DH_ALPHA     = np.array([[     0, np.deg2rad(-75), np.deg2rad(128),     0, m.pi/2, m.pi/2, 0],
                                [  m.pi,  np.deg2rad(75),  np.deg2rad(52),     0, m.pi/2, m.pi/2, 0]], dtype = 'float')
 RAVEN_DH_THETA     = np.array([[     V,               V,          m.pi/2,     V,      V,      V, 0],
@@ -38,11 +39,8 @@ RAVEN_IKIN_PARAM   = np.array([float(m.sin(RAVEN_DH_ALPHA[0][1])),
                                 RAVEN_DH_A[0][5]], dtype = 'float')
 RAVEN_T_B0         = np.array([np.matrix([[0, 0,  1,  0.30071], [0, -1, 0, 0.061], [1, 0, 0, -0.007], [0, 0, 0, 1]], dtype = 'float'),
                                np.matrix([[0, 0, -1, -0.30071], [0,  1, 0, 0.061], [1, 0, 0, -0.007], [0, 0, 0, 1]], dtype = 'float')])
+RAVEN_T_CB         = np.matrix([[0.0, 1.0, 0.0, 0.0],[-1.0, 0.0, 0.0, 0.0],[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]) #using quaternion to rotational translator
 
-RAVEN_T_CB         = np.matrix([[ 0.4231991, 0.9060367, 0.0000000, 0.0000000],
-                                [-0.9060367, 0.4231991, 0.0000000, 0.0000000],
-                                [ 0.0000000, 0.0000000, 1.0000000, 1.0000000],
-                                [         0,         0,         0,         1]], dtype = 'float') #using quaternion to rotational translator
 # Raven joints:
 # joint -: 0_link-base_link_L:             fixed
 # joint 0: base_link_L-link1_L:            revolute        (shoulder)              range: -pi~pi
