@@ -251,6 +251,8 @@ bool AMBFRavenPlanner::check_incr_safety(vector<float> curr_raw, vector<float>& 
 bool AMBFRavenPlanner::fwd_kinematics(int arm, vector<float> input_jp, tf::Transform& output_cp)
 {
 	cout << "Performing fwd_kin..." << endl;
+	cout << "arm = " << arm << endl;
+	cout << "input jp = " << input_jp[0] << ", " << input_jp[1] << ", " << input_jp[2] << ", " << input_jp[3] << ", " << input_jp[4] << ", " << input_jp[5] << ", " << input_jp[6] << ", " <<  endl;
 	bool success = false;
 
 	vector<float> dh_alpha(6);
@@ -283,13 +285,23 @@ bool AMBFRavenPlanner::fwd_kinematics(int arm, vector<float> input_jp, tf::Trans
 		dh_alpha[i] = AMBFDef::raven_dh_alpha[arm][i];
 		dh_a[i] = AMBFDef::raven_dh_a[arm][i];
 	}
-	for (int i = 0; i < 6; i++){
-		cout << "jp_dh " << i << " " << jp_dh[i] << endl;
-	}
+  cout << "dh_alpha = " << dh_alpha[0] << ", " << dh_alpha[1] << ", " << dh_alpha[2] << ", " << dh_alpha[3] << ", " << dh_alpha[4] << ", " << dh_alpha[5] << ", " << dh_alpha[6] << ", " << endl;
+  cout << "dh_theta = " << dh_theta[0] << ", " << dh_theta[1] << ", " << dh_theta[2] << ", " << dh_theta[3] << ", " << dh_theta[4] << ", " << dh_theta[5] << ", " << dh_theta[6] << ", " << endl;
+	cout << "dh_d = " << dh_d[0] << ", " << dh_d[1] << ", " << dh_d[2] << ", " << dh_d[3] << ", " << dh_d[4] << ", " << dh_d[5] << ", " << dh_d[6] << ", " << endl;
+	cout << "dh_a = " << dh_a[0] << ", " << dh_a[1] << ", " << dh_a[2] << ", " << dh_a[3] << ", " << dh_a[4] << ", " << dh_a[5] << ", " << dh_a[6] << ", " << endl;
+	//  (int i = 0; i < 6; i++){
+	// 	cout << "jp_dh " << i << " " << jp_dh[i] << endl;
+	// }
 
 	// computes forward kinematics
 	output_cp = AMBFDef::raven_T_CB * AMBFDef::raven_T_B0[arm] * fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d);
-	cout << output_cp << endl;
+
+	tf::Vector3 output_cp_pos = output_cp.getOrigin();
+	tf::Matrix3x3 output_cp_ori = output_cp.getBasis();
+	cout << "output_cp = pos (" << output_cp_pos[0] <<" ,"<<output_cp_pos[1]<<" ,"<<output_cp_pos[2]<<")"<<endl;
+	cout << "          = ori " << output_cp_ori[0][0] <<" ,"<<output_cp_ori[0][1]<<" ,"<<output_cp_ori[0][2]<<endl;
+  cout << "                " << output_cp_ori[1][0] <<" ,"<<output_cp_ori[1][1]<<" ,"<<output_cp_ori[1][2]<<endl;
+	cout << "                " << output_cp_ori[2][0] <<" ,"<<output_cp_ori[2][1]<<" ,"<<output_cp_ori[2][2]<<endl;
 
 	success = true;
 	return success;
@@ -352,7 +364,56 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 {
 	bool success = false;
 
+	cout << "input cp";
+	tf::Vector3 input_pos = input_cp.getOrigin();
+	tf::Matrix3x3 input_ori= input_cp.getBasis();
+	cout << "input POS" << input_pos[0] <<" ,"<<input_pos[1]<<" ,"<<input_pos[2]<<")"<<endl;
+	cout << "          input ORI " << input_ori[0][0] <<" ,"<<input_ori[0][1]<<" ,"<<input_ori[0][2]<<endl;
+  cout << "                " << input_ori[1][0] <<" ,"<<input_ori[1][1]<<" ,"<<input_ori[1][2]<<endl;
+	cout << "                " << input_ori[2][0] <<" ,"<<input_ori[2][1]<<" ,"<<input_ori[2][2]<<endl;
+
+
+	// cout << "raven_T_CB = " << endl;
+	// tf::Vector3 TCB_pos = AMBFDef::raven_T_CB.getOrigin();
+	// tf::Matrix3x3 TCB_ori = AMBFDef::raven_T_CB.getBasis();
+	// cout << "TCB POS" << TCB_pos[0] <<" ,"<<TCB_pos[1]<<" ,"<<TCB_pos[2]<<")"<<endl;
+	// cout << "          TCB ORI " << TCB_ori[0][0] <<" ,"<<TCB_ori[0][1]<<" ,"<<TCB_ori[0][2]<<endl;
+  // cout << "                " << TCB_ori[1][0] <<" ,"<<TCB_ori[1][1]<<" ,"<<TCB_ori[1][2]<<endl;
+	// cout << "                " << TCB_ori[2][0] <<" ,"<<TCB_ori[2][1]<<" ,"<<TCB_ori[2][2]<<endl;
+	//
+	// cout << "raven_T_B0[arm]";
+	// tf::Vector3 TB0_pos = AMBFDef::raven_T_B0[arm].getOrigin();
+	// tf::Matrix3x3 TB0_ori = AMBFDef::raven_T_B0[arm].getBasis();
+	// cout << "TB0 POS" << TB0_pos[0] <<" ,"<<TB0_pos[1]<<" ,"<<TB0_pos[2]<<","<<endl;
+	// cout << "          TB0 ORI " << TB0_ori[0][0] <<" ,"<<TB0_ori[0][1]<<" ,"<<TB0_ori[0][2]<<endl;
+  // cout << "                " << TB0_ori[1][0] <<" ,"<<TB0_ori[1][1]<<" ,"<<TB0_ori[1][2]<<endl;
+	// cout << "                " << TB0_ori[2][0] <<" ,"<<TB0_ori[2][1]<<" ,"<<TB0_ori[2][2]<<endl;
+	//
+	// cout << "raven_T_B0[arm] * raven_T_CB";
+	// tf::Transform mult = AMBFDef::raven_T_CB * AMBFDef::raven_T_B0[arm];
+	// tf::Vector3 mult_pos = mult.getOrigin();
+	// tf::Matrix3x3 mult_ori = mult.getBasis();
+	// cout << "TB0 POS" << mult_pos[0] <<" ,"<<mult_pos[1]<<" ,"<<mult_pos[2]<<")"<<endl;
+	// cout << "          TB0ORI " << mult_ori[0][0] <<" ,"<<mult_ori[0][1]<<" ,"<<mult_ori[0][2]<<endl;
+  // cout << "                " << mult_ori[1][0] <<" ,"<<mult_ori[1][1]<<" ,"<<mult_ori[1][2]<<endl;
+	// cout << "                " << mult_ori[2][0] <<" ,"<<mult_ori[2][1]<<" ,"<<mult_ori[2][2]<<endl;
+	//
+	// cout << "inverse raven_T_B0[arm] * raven_T_CB";
+	// tf::Transform mult_inv = mult.inverse();
+	// tf::Vector3 mult_inv_pos = mult_inv.getOrigin();
+	// tf::Matrix3x3 mult_inv_ori = mult_inv.getBasis();
+	// cout << "TB0 POS" << mult_inv_pos[0] <<" ,"<<mult_inv_pos[1]<<" ,"<<mult_inv_pos[2]<<")"<<endl;
+	// cout << "          TB0ORI " << mult_inv_ori[0][0] <<" ,"<<mult_inv_ori[0][1]<<" ,"<<mult_inv_ori[0][2]<<endl;
+  // cout << "                " << mult_inv_ori[1][0] <<" ,"<<mult_inv_ori[1][1]<<" ,"<<mult_inv_ori[1][2]<<endl;
+	// cout << "                " << mult_inv_ori[2][0] <<" ,"<<mult_inv_ori[2][1]<<" ,"<<mult_inv_ori[2][2]<<endl;
+	//
 	tf::Transform xf =  (AMBFDef::raven_T_CB * AMBFDef::raven_T_B0[arm]).inverse() * input_cp;
+  // tf::Vector3 xf_pos = xf.getOrigin();
+	// tf::Matrix3x3 xf_ori = xf.getBasis();
+	// cout << "xf = pos (" << xf_pos[0] <<" ,"<<xf_pos[1]<<" ,"<<xf_pos[2]<<")"<<endl;
+	// cout << "          = ori " << xf_ori[0][0] <<" ,"<<xf_ori[0][1]<<" ,"<<xf_ori[0][2]<<endl;
+  // cout << "                " << xf_ori[1][0] <<" ,"<<xf_ori[1][1]<<" ,"<<xf_ori[1][2]<<endl;
+	// cout << "                " << xf_ori[2][0] <<" ,"<<xf_ori[2][1]<<" ,"<<xf_ori[2][2]<<endl;
 
 	vector<vector<float>> iksol(AMBFDef::raven_iksols, vector<float>(AMBFDef::raven_joints-1));
 	vector<bool>ikcheck(AMBFDef::raven_iksols);
@@ -378,18 +439,31 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 
 	//  Step 1, Compute P5
 	tf::Transform T60 = xf.inverse();
+	// cout << "T60 = " << endl;
+  tf::Vector3 T60_pos = T60.getOrigin();
+	tf::Matrix3x3 T60_ori = T60.getBasis();
+	// cout << "T60 = pos (" << T60_pos[0] <<" ,"<<T60_pos[1]<<" ,"<<T60_pos[2]<<")"<<endl;
+	// cout << "          = ori " << T60_ori[0][0] <<" ,"<<T60_ori[0][1]<<" ,"<<T60_ori[0][2]<<endl;
+  // cout << "                " << T60_ori[1][0] <<" ,"<<T60_ori[1][1]<<" ,"<<T60_ori[1][2]<<endl;
+	// cout << "                " << T60_ori[2][0] <<" ,"<<T60_ori[2][1]<<" ,"<<T60_ori[2][2]<<endl;
 	tf::Vector3 p6rcm = T60.getOrigin();
+	// cout << "p6rcm = " << p6rcm[0] << " ," << p6rcm[1] << " ," << p6rcm[2] << endl;
 	tf::Vector3 p05[8];
 
 	p6rcm[2] = 0;  // take projection onto x-y plane
 	for (int i = 0; i < 2; i++)
 	{
 		tf::Vector3 p65 = (-1 + 2 * i) * AMBFDef::raven_ikin_param [5] * p6rcm.normalize();
+		// cout << "p6rcm normalized " << i << "= " << p6rcm.normalize()[0] << " ," << p6rcm.normalize()[1] << " ," << p6rcm.normalize()[2] << endl;
+		// cout << "p65 " << i << "= " << p65[0] << " ," << p65[1] << " ," << p65[2] << endl;
 		p05[4 * i] = p05[4 * i + 1] = p05[4 * i + 2] = p05[4 * i + 3] = xf * p65;
 	}
-	cout << "p05 = " << endl;
+	// cout << "p05 = " << endl;
 	for (int i = 0; i < 8; i++){
-		cout << p05[i] << endl;
+		for (int j = 0; j < 3; j++){
+		    // cout << p05[i][j] << " ";
+		}
+		// cout << endl;
 	}
 
 	//  Step 2, compute displacement of prismatic joint d3
@@ -408,28 +482,34 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		  success = false;
 		  break;
 		}
+		// cout << "insertion = " << insertion << endl;
 		iksol[4 * i + 0][2] = iksol[4 * i + 1][2] = -AMBFDef::raven_ikin_param[4] - insertion;
 		iksol[4 * i + 2][2]= iksol[4 * i + 3][2] = -AMBFDef::raven_ikin_param[4] + insertion;
 	}
-	cout << "iksol after step 2 = " << endl
+	// cout << "iksol after step 2 = " << endl;
 	for (int i = 0; i < 8; i++){
 		for (int j = 0; j < 7; j++){
-			cout << iksol[i][j];
+			// cout << iksol[i][j] << "   ,";
 		}
-		cout << endl;
+		// cout << endl;
 	}
 
 	//  Step 3, calculate theta 2
 	for (int i = 0; i < AMBFDef::raven_iksols; i += 2)  // p05 solutions
 	{
 		float z0p5 = p05[i][2];
+		// cout << "z0p5 = " << z0p5 << endl;
 
 		float cth2 = 0;
 		float d = iksol[i][2] + AMBFDef::raven_ikin_param[4];
+		// cout << "d = " << d << endl;
 		float cth2_nom = (( z0p5 / d) + AMBFDef::raven_ikin_param[1] * AMBFDef::raven_ikin_param[3]);
+		// cout << "cth2_nom = " << cth2_nom << endl;
 		float cth2_den = (AMBFDef::raven_ikin_param[0] * AMBFDef::raven_ikin_param[2]);
+		// cout << "cth2_den = " << cth2_den << endl;
 
 		cth2 = -cth2_nom / cth2_den;
+		// cout << "cth2 = " << cth2 << endl;
 
 		// Smooth roundoff errors at +/- 1.
 		if (cth2 > 1 && cth2 < 1 + Eps)
@@ -447,12 +527,12 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		  iksol[i + 1][1] = -acos(cth2);
 		}
 	}
-	cout << "iksol after step 3" << endl;
+	// cout << "iksol after step 3" << endl;
 	for (int i = 0; i < 8; i++){
 		for (int j = 0; j < 7; j++){
-			cout << iksol[i][j];
+			// cout << iksol[i][j] << "   ,";
 		}
-		cout << endl;
+		// cout << endl;
 	}
 
 
@@ -462,35 +542,57 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		if (ikcheck[i] == false) continue;
 
 		float cth2 = cos(iksol[i][1]);
+		// cout << "cth2 = " << cth2 << endl;
 		float sth2 = sin(iksol[i][1]);
+		// cout << "sth2 = " << sth2 << endl;
 		float d = iksol[i][2] + AMBFDef::raven_ikin_param[4];
+		// cout << "d = " << d << endl;
 		float BB1 = sth2 * AMBFDef::raven_ikin_param[2];
+		// cout << "BB1 = " << BB1 << endl;
 		float BB2 = 0;
 		tf::Matrix3x3 Bmx;  // using 3 vector and matrix bullet types for convenience.
 		tf::Vector3 xyp05(p05[i]);
+		// cout << "xyp05 = " << xyp05[0] << ", "<< xyp05[1] << ", "<< xyp05[2] << endl;
 		xyp05[2] = 0;
 
 		BB2 = cth2 * AMBFDef::raven_ikin_param[1]*AMBFDef::raven_ikin_param[2]
 		      - AMBFDef::raven_ikin_param[0]*AMBFDef::raven_ikin_param[3];
+		// cout << "BB2 = " << BB2 << endl;
 
-		if (arm == 0)
+		if (arm == 0) {
 		  Bmx.setValue(BB1, BB2, 0, -BB2, BB1, 0, 0, 0, 1);
-		else
+			// cout << "Bmx = " << endl;
+			// cout << Bmx[0][0] << ", " << Bmx[0][1] << ", " << Bmx[0][2]<< endl;
+			// cout << Bmx[1][0] << ", " << Bmx[1][1] << ", " << Bmx[1][2]<< endl;
+			// cout << Bmx[2][0] << ", " << Bmx[2][1] << ", " << Bmx[2][2]<< endl;
+		}
+		else {
 		  Bmx.setValue(BB1, BB2, 0,  BB2, -BB1, 0, 0, 0, 1);
-
+			// cout << "Bmx = " << endl;
+			// cout << Bmx[0][0] << ", " << Bmx[0][1] << ", " << Bmx[0][2]<< endl;
+			// cout << Bmx[1][0] << ", " << Bmx[1][1] << ", " << Bmx[1][2]<< endl;
+			// cout << Bmx[2][0] << ", " << Bmx[2][1] << ", " << Bmx[2][2]<< endl;
+		}
 		tf::Vector3 scth1 = Bmx.inverse() * xyp05 * (1 / d);
+		// cout << "Bmx inverse= " << endl;
+		// cout << Bmx.inverse()[0][0] << ", " << Bmx.inverse()[0][1] << ", " << Bmx.inverse()[0][2]<< endl;
+		// cout << Bmx.inverse()[1][0] << ", " << Bmx.inverse()[1][1] << ", " << Bmx.inverse()[1][2]<< endl;
+		// cout << Bmx.inverse()[2][0] << ", " << Bmx.inverse()[2][1] << ", " << Bmx.inverse()[2][2]<< endl;
+		// cout << "Bmx inverse * xyp05 = ";
+		// cout << (Bmx.inverse()*xyp05)[0] << ", " << (Bmx.inverse()*xyp05)[1] << ", " << (Bmx.inverse()*xyp05)[2]<< endl;
 		iksol[i][0] = atan2(scth1[1], scth1[0]);
 	}
 
-	cout << "iksol after step 4" << endl;
+	//cout << "iksol after step 4" << endl;
 	for (int i = 0; i < 8; i++){
 		for (int j = 0; j < 7; j++){
-			cout << iksol[i][j];
+			// cout << iksol[i][j] << "   ,";
 		}
-		cout << endl;
+		// cout << endl;
 	}
 
 	//  Step 5: get theta 4, 5, 6
+	// cout << ikcheck[0] << ", " << ikcheck[1] << ", " << ikcheck[2] << ", " << ikcheck[3] << ", " << ikcheck[4] << ", " << ikcheck[5] << ", " << ikcheck[6] << ", " << ikcheck[7] << endl;
 	for (int i = 0; i < AMBFDef::raven_iksols; i++)
 	{
 		if (ikcheck[i] == false) continue;
@@ -500,29 +602,51 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		dh_theta[1] = iksol[i][1];
 		dh_d[2] = iksol[i][2];
 
+
 		tf::Transform T03 = fwd_trans(0,3, dh_alpha, dh_theta, dh_a, dh_d);
+		cout << "T03 = ";
+		cout << T03.getBasis()[0][0] << ", " << T03.getBasis()[0][1] << ", " << T03.getBasis()[0][2] << ", " << T03.getOrigin()[0] << endl;
+		cout << T03.getBasis()[1][0] << ", " << T03.getBasis()[1][1] << ", " << T03.getBasis()[1][2] << ", " << T03.getOrigin()[1] << endl;
+		cout << T03.getBasis()[2][0] << ", " << T03.getBasis()[2][1] << ", " << T03.getBasis()[2][2] << ", " << T03.getOrigin()[2] << endl;
+		cout << "0.0" << ", " << "0.0" << ", " << "0.0" << ", " << "1.0" << endl;
+
+
 		tf::Transform T36 = T03.inverse() * xf;
 
+		cout << "T36 = ";
+		cout << T36.getBasis()[0][0] << ", " << T36.getBasis()[0][1] << ", " << T36.getBasis()[0][2] << ", " << T36.getOrigin()[0] << endl;
+		cout << T36.getBasis()[1][0] << ", " << T36.getBasis()[1][1] << ", " << T36.getBasis()[1][2] << ", " << T36.getOrigin()[1] << endl;
+		cout << T36.getBasis()[2][0] << ", " << T36.getBasis()[2][1] << ", " << T36.getBasis()[2][2] << ", " << T36.getOrigin()[2] << endl;
+		cout << "0.0" << ", " << "0.0" << ", " << "0.0" << ", " << "1.0" << endl;
+
+
 		float c5 = -T36.getBasis()[2][2];
+		cout << "c5 = " << c5 << endl;
 		float s5 = (T36.getOrigin()[2] - AMBFDef::raven_ikin_param[4]) / AMBFDef::raven_ikin_param[5];
+		cout << "s5 = " << s5 << endl;
+
 
 		// Compute theta 4:
 		float c4, s4;
 		if (fabs(c5) > Eps)
 		{
 			c4 = T36.getOrigin()[0] / (AMBFDef::raven_ikin_param[5] * c5);
+			cout << "c4 = " << c4 << endl;
 			s4 = T36.getOrigin()[1] / (AMBFDef::raven_ikin_param[5] * c5);
+			cout << "s4 = " << s4 << endl;
 		}
 		else
 		{
 			c4 = T36.getBasis()[0][2] / s5;
+			cout << "c4 = " << c4 << endl;
 			s4 = T36.getBasis()[1][2] / s5;
+			cout << "s4 = " << s4 << endl;
 		}
 		iksol[i][3] = atan2(s4, c4);
 		cout << "iksol after computing theta 4 " << endl;
 		for (int i = 0; i < 8; i++){
 			for (int j = 0; j < 7; j++){
-				cout << iksol[i][j];
+				cout << iksol[i][j] << "   ,";
 			}
 			cout << endl;
 		}
@@ -532,7 +656,7 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		cout << "iksol after computing theta 5 " << endl;
 		for (int i = 0; i < 8; i++){
 			for (int j = 0; j < 7; j++){
-				cout << iksol[i][j];
+				cout << iksol[i][j] << "   ,";
 			}
 			cout << endl;
 		}
@@ -543,22 +667,39 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		if (fabs(s5) > Eps)
 		{
 			c6 = T36.getBasis()[2][0] / s5;
+			cout << "c6 = " << c6 << endl;
 			s6 = -T36.getBasis()[2][1] / s5;
+			cout << "s6 = " << s6 << endl;
 		}
 		else
 		{
 			dh_theta[3] = iksol[i][3];
 			dh_theta[4] = iksol[i][4];
 			tf::Transform T05 = T03 * fwd_trans(3,5, dh_alpha, dh_theta, dh_a, dh_d);
+			cout << "T05 = ";
+			cout << T05.getBasis()[0][0] << ", " << T05.getBasis()[0][1] << ", " << T05.getBasis()[0][2] << ", " << T05.getOrigin()[0] << endl;
+			cout << T05.getBasis()[1][0] << ", " << T05.getBasis()[1][1] << ", " << T05.getBasis()[1][2] << ", " << T05.getOrigin()[1] << endl;
+			cout << T05.getBasis()[2][0] << ", " << T05.getBasis()[2][1] << ", " << T05.getBasis()[2][2] << ", " << T05.getOrigin()[2] << endl;
+			cout << "0.0" << ", " << "0.0" << ", " << "0.0" << ", " << "1.0" << endl;
+
+
 			tf::Transform T56 = T05.inverse() * xf;
+			cout << "T56 = ";
+			cout << T56.getBasis()[0][0] << ", " << T56.getBasis()[0][1] << ", " << T56.getBasis()[0][2] << ", " << T56.getOrigin()[0] << endl;
+			cout << T56.getBasis()[1][0] << ", " << T56.getBasis()[1][1] << ", " << T56.getBasis()[1][2] << ", " << T56.getOrigin()[1] << endl;
+			cout << T56.getBasis()[2][0] << ", " << T56.getBasis()[2][1] << ", " << T56.getBasis()[2][2] << ", " << T56.getOrigin()[2] << endl;
+			cout << "0.0" << ", " << "0.0" << ", " << "0.0" << ", " << "1.0" << endl;
+
 			c6 = T56.getBasis()[0][0];
+			cout << "c6 = " << c6 << endl;
+			cout << "s6 = " << s6 << endl;
 			s6 = T56.getBasis()[2][0];
 		}
 		iksol[i][5] = atan2(s6, c6);
 		cout << "iksol after computing theta 6" << endl;
 		for (int i = 0; i < 8; i++){
 			for (int j = 0; j < 7; j++){
-				cout << iksol[i][j];
+				cout << iksol[i][j] << "   ,";
 			}
 			cout << endl;
 		}
@@ -567,7 +708,7 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 	cout << "iksol after computing all theta values" << endl;
 	for (int i = 0; i < 8; i++){
 		for (int j = 0; j < 7; j++){
-			cout << iksol[i][j];
+			cout << iksol[i][j] << "   ,";
 		}
 		cout << endl;
 	}
@@ -581,15 +722,24 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 	}
 
 	cout << "current dh vals for home" << endl;
-	cout << jp_dh
+	for(int i=0; i<6; i++){
+		cout << jp_dh[i]<<", ";
+	}
+	cout << endl;
 
 	int sol_idx;
 	float sol_err;
 
 	if(find_best_solution(jp_dh, iksol, ikcheck, sol_idx, sol_err))
 	{
+		cout << "input gangle = " << input_gangle << endl;
+		cout << "arm = " << arm << endl;
 		bool limited = dhvalue_to_joint(iksol[sol_idx], output_jp, input_gangle, arm);
-		cout << "iksol best sol = " << iksol[sol_idx] << endl;
+		cout << "iksol best sol = ";
+		for(int i=0; i<6; i++){
+			cout << iksol[sol_idx][i] << "   ,";
+		}
+		cout << endl;
 
 		// adjust desired cartesian positions if necessary
 		if(limited)
@@ -598,8 +748,11 @@ bool AMBFRavenPlanner::inv_kinematics(int arm, tf::Transform& input_cp, float in
 		  input_cp = xf;
 		}
 
-		cout << "jp solution " << output_jp << endl;
-
+		cout << "jp solution ";
+		for(int i=0; i<7; i++){
+				cout << output_jp[i] << "   ,";
+		}
+		cout << endl;
 		success = true;
 	}
 	else
