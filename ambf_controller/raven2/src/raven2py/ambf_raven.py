@@ -75,46 +75,5 @@ class ambf_raven:
             self.arms[arm].set_joint_pos(i, rampup*self.dance_scale_joints[i]*math.sin(self.speed*(count+offset))+self.home_joints[i])
             self.rampup_count[arm] += 1
 
-    def manual_move(self, arm, x, y, z, gangle):
-        curr_jp = np.array(self.arms[arm].get_all_joint_pos(), dtype = "float")
-        curr_tm = fk.fwd_kinematics(arm, curr_jp)
-        curr_tm[0,3] += x
-        curr_tm[1,3] += y
-        curr_tm[2,3] += z
-        jpl = ik.inv_kinematics(arm, curr_tm, gangle)
-        self.limited[arm] = jpl[1]
-        if self.limited[arm]:
-            print("Desired cartesian position is out of bounds for Raven2. Will move to max pos.")
-        new_jp = jpl[0]
-        self.next_jp[arm] = new_jp
-
-    def move(self, first_entry, arm, count):
-        if(first_entry):
-            for i in range(self.raven_joints):
-                self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
-                self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
-        #gradualizes movement from a to b
-        scale = min(1.0*count/self.loop_rate, 1.0)
-        #array containing distance to go to start point
-        diff_jp = [0,0,0,0,0,0,0]
-
-        #sets position for each joint
-        for i in range(self.arms[arm].get_num_joints()):
-            self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
-            diff_jp[i] = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
-        #in progress, indicates when arm is honed
-
-
-        max_value = np.max(diff_jp)
-
-        if(max_value < 0.1 or self.limited[arm]):
-            self.moved[arm] = True
-
-        else:
-            self.moved[arm] = False
-        return self.moved[arm]
-
-        def control_move():
-            for arm in range(arms.length):
-                for i in range(self.arms[arm].get_num_joints()):
-                    self.arms[arm].set_joint_pos(i, self.next_jp[arm][i])
+    def get_t_command(self):
+        return (self.arms[0].get_torque_command(), self.arms[1].get_torque_command)

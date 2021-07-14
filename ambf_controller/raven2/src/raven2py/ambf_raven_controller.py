@@ -12,7 +12,8 @@ import ambf_raven as arav
 
 '''
 author: Sean
-ambf_raven_controller is a Client for operating the ambf_raven simulated robot
+ambf_raven_controller is a Client for operating the ambf_raven simulated robot, specifically designed for
+using sine_dance and recording data to be used create ml file
 '''
 
 
@@ -21,7 +22,7 @@ def control_reset():
     return new_control
 
 def do(q, raven):
-        control = [False, False, False, False]
+        control = [False, False, False]
         while not control[2]:
             if not q.empty():
                 control = q.get()
@@ -41,6 +42,7 @@ def do(q, raven):
                     control = q.get()
             while control[1]:
                 if raven.i == 0:
+                    start = time.time()
                     raven.sine_dance(1, 1, raven.i, raven.rampup_count)
                     raven.sine_dance(1, 0, raven.i, raven.rampup_count)
                 else:
@@ -49,74 +51,10 @@ def do(q, raven):
                     if not q.empty():
                         control = q.get()
                 raven.i += 1
+                print("Time = "),
+                print(time.time() - start)
+                print(raven.get_t_command())
                 time.sleep(0.01)
-            while control[3] and not any(raven.moved):
-                #move in x direction:
-                # x = [0.0,0.0]
-                # y = [0.0,0.0]
-                # z = [0.0,0.0]
-                # pygame.init()
-                # events = pygame.event.get()
-                # for event in events:
-                #     if event.type == pygame.KEYDOWN:
-                #         if event.key == pygame.K_Q:
-                #             x[0] += 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_I:
-                #             x[1] += 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #         elif event.key == pygame.K_A:
-                #             x[0] -= 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_J:
-                #             x[1] -= 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #         elif event.key == pygame.K_W:
-                #             y[0] += 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_O:
-                #             y[1] += 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #         elif event.key == pygame.K_S:
-                #             y[0] -= 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_K:
-                #             y[1] -= 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #         elif event.key == pygame.K_E:
-                #             z[0] += 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_P:
-                #             z[1] += 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #         elif event.key == pygame.K_D:
-                #             z[0] -= 0.01
-                #             raven.manual_move(0, x[0], y[0], z[0], 0)
-                #         elif event.key == pygame.K_L:
-                #             z[1] -= 0.01
-                #             raven.manual_move(1, x[1], y[1], z[1], 0)
-                #     raven.control_move()
-                x = [0.11,0.0]
-                y = [0.5, 0.0]
-                z = [0.0,1.0]
-                raven.manual_move(0, x[0], y[0], z[0], 0)
-                raven.manual_move(1, x[1], y[1], z[1], 0)
-                # print(int(raven.loop_rate * np.max([x[0], x[1], y[0], y[1], z[0], z[1]])))
-                for i in range(raven.loop_rate):
-                    if not i:
-                        raven.moved[0] = raven.move(1, 1, i)
-                        raven.moved[1] = raven.move(1, 0, i)
-                    else:
-                        raven.moved[0] = raven.move(0, 1, i)
-                        raven.moved[1] = raven.move(0, 0, i)
-                    time.sleep(0.01)
-                if raven.moved[0] and raven.moved[1]:
-                    print("Raven has moved!")
-                if not q.empty():
-                    control = q.get()
-
-
-
         print("shutting down...\n")
         os.system('kill %d' % os.getpid())
         exit(0)
@@ -143,13 +81,6 @@ def get_input(q, stdin):
             print("doing sine dance...")
             control[1] = True
             q.put(control)
-            userinput = raw_input("Input key to switch control modes\n")
-            continue
-        elif userinput == 'm':
-            print("entering manual control mode...")
-            control[3] = True
-            q.put(control)
-            print("Welcome to the Raven2 AMBF Manual Control Mode")
             userinput = raw_input("Input key to switch control modes\n")
             continue
         elif userinput == 'q':

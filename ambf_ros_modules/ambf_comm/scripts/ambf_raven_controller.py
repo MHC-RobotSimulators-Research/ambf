@@ -1,4 +1,5 @@
 import multiprocessing
+import pygame
 import sys
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 import os
@@ -51,16 +52,58 @@ def do(q, raven):
                 time.sleep(0.01)
             while control[3] and not any(raven.moved):
                 #move in x direction:
-                print("Welcome to the Raven2 AMBF Manual Control Mode")
+                # x = [0.0,0.0]
+                # y = [0.0,0.0]
+                # z = [0.0,0.0]
+                # pygame.init()
+                # events = pygame.event.get()
+                # for event in events:
+                #     if event.type == pygame.KEYDOWN:
+                #         if event.key == pygame.K_Q:
+                #             x[0] += 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_I:
+                #             x[1] += 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #         elif event.key == pygame.K_A:
+                #             x[0] -= 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_J:
+                #             x[1] -= 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #         elif event.key == pygame.K_W:
+                #             y[0] += 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_O:
+                #             y[1] += 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #         elif event.key == pygame.K_S:
+                #             y[0] -= 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_K:
+                #             y[1] -= 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #         elif event.key == pygame.K_E:
+                #             z[0] += 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_P:
+                #             z[1] += 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #         elif event.key == pygame.K_D:
+                #             z[0] -= 0.01
+                #             raven.manual_move(0, x[0], y[0], z[0], 0)
+                #         elif event.key == pygame.K_L:
+                #             z[1] -= 0.01
+                #             raven.manual_move(1, x[1], y[1], z[1], 0)
+                #     raven.control_move()
                 x = [0.11,0.0]
-                y = [0.0, 0.0]
-                z = [0.0,0.0]
+                y = [0.5, 0.0]
+                z = [0.0,1.0]
                 raven.manual_move(0, x[0], y[0], z[0], 0)
                 raven.manual_move(1, x[1], y[1], z[1], 0)
                 # print(int(raven.loop_rate * np.max([x[0], x[1], y[0], y[1], z[0], z[1]])))
                 for i in range(raven.loop_rate):
                     if not i:
-                        print("moving 0.02 in the x direction...")
                         raven.moved[0] = raven.move(1, 1, i)
                         raven.moved[1] = raven.move(1, 0, i)
                     else:
@@ -106,6 +149,7 @@ def get_input(q, stdin):
             print("entering manual control mode...")
             control[3] = True
             q.put(control)
+            print("Welcome to the Raven2 AMBF Manual Control Mode")
             userinput = raw_input("Input key to switch control modes\n")
             continue
         elif userinput == 'q':

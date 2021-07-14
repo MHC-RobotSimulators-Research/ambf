@@ -127,3 +127,8 @@ class ambf_raven:
         else:
             self.moved[arm] = False
         return self.moved[arm]
+
+        def control_move():
+            for arm in range(arms.length):
+                for i in range(self.arms[arm].get_num_joints()):
+                    self.arms[arm].set_joint_pos(i, self.next_jp[arm][i])

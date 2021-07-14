@@ -58,7 +58,6 @@ def fwd_trans(a, b, dh_alpha, dh_theta, dh_a, dh_d):
 
 def fwd_kinematics(arm, input_joint_pos):
     success = False
-    # print(input_joint_pos)
 
     dh_alpha = np.zeros(7, dtype = 'float')
     dh_theta = np.zeros(7, dtype = 'float')
@@ -81,21 +80,7 @@ def fwd_kinematics(arm, input_joint_pos):
             dh_theta[i] = jp_dh[i]
         dh_alpha[i] = RAVEN_DH_ALPHA[arm][i]
         dh_a[i] = RAVEN_DH_A[arm][i]
-    # print("dh alpha")
-    # print(dh_alpha)
-    # print("dh theta")
-    # print(dh_theta)
-    # print("dh d")
-    # print(dh_d)
-    # print("dh a")
-    # print(dh_a)
     output_transformation = np.matmul(np.matmul(RAVEN_T_CB, RAVEN_T_B0[arm]), fwd_trans(0, 6, dh_alpha, dh_theta, dh_a, dh_d))
 
-    # print("output trans")
-    # print(output_transformation)
 
     return output_transformation
-
-# if __name__ == '__main__':
-#     input = np.array([-0.912269, -0.895033, 0.1, 1.72894, 2.01052, 0.175678, -0.101728])
-#     fwd_kinematics(0, input)
