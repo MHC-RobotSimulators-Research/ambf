@@ -77,3 +77,18 @@ class ambf_raven:
 
     def get_t_command(self):
         return (self.arms[0].get_torque_command(), self.arms[1].get_torque_command)
+
+    def set_raven_pos(self, pos_list):
+        for i in range(len(pos_list)):
+            if i < 2 :
+                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]))
+            elif i == 2:
+                self.arms[0].set_joint_pos(i, pos_list[i]/100)
+            elif 3 < i < 8:
+                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]))
+            elif 8 <= i < 10:
+                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]))
+            elif i == 10:
+                self.arms[1].set_joint_pos(i - 8, pos_list[i]/100)
+            elif 11 < i < 16:
+                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]))

@@ -8,6 +8,7 @@ from ambf_client import Client
 import math
 import numpy as np
 import ambf_raven as arav
+import csv
 
 
 '''
@@ -21,8 +22,8 @@ def control_reset():
     new_control = [False, False, False, False]
     return new_control
 
-def do(q, raven):
-        control = [False, False, False]
+def do(q, raven, csvfloats):
+        control = [False, False, False, False]
         while not control[2]:
             if not q.empty():
                 control = q.get()
@@ -51,10 +52,17 @@ def do(q, raven):
                     if not q.empty():
                         control = q.get()
                 raven.i += 1
-                print("Time = "),
-                print(time.time() - start)
-                print(raven.get_t_command())
                 time.sleep(0.01)
+            while control[3]:
+                finished = False
+                start = time.time()
+                while not finished or not q.empty():
+                    curr_time = time.time() - start
+                    if int(curr_time * 1000) > 110256:
+                        finished = True
+                    raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                print("Raven has completed set trajectory")
+
         print("shutting down...\n")
         os.system('kill %d' % os.getpid())
         exit(0)
@@ -86,6 +94,10 @@ def get_input(q, stdin):
         elif userinput == 'q':
             control[2] = True
             q.put(control)
+        elif userinput == 'f':
+            control[3] = True
+            q.put(control)
+            userinput = raw_input("Input key to switch control modes\n")
 
 
 
@@ -95,7 +107,18 @@ def main():
     newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
     p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))
     p1.start()
-    do(q, raven)
+    with open("ravenpath.csv", mode = 'r') as file:
+        csvFile = csv.reader(file)
+        csvfloats = np.zeros((110255, 16), dtype = "float")
+        i = 0
+        j = 0
+        for lines in csvFile:
+            for cell in lines:
+                csvfloats[i][j] = (float(cell.strip("\xef\xbb\xbf")))
+                j += 1
+            i += 1
+            j = 0
+    do(q, raven, csvfloats)
     p1.join()
 
 
