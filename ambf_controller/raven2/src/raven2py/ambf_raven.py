@@ -34,6 +34,7 @@ class ambf_raven:
         self.i = 0
         self.speed = 10.00/self.loop_rate
         self.rampup_speed = 0.5/self.loop_rate
+        self.finished = False
 
     def go_home(self,first_entry, arm, count):
         '''
@@ -80,15 +81,63 @@ class ambf_raven:
 
     def set_raven_pos(self, pos_list):
         for i in range(len(pos_list)):
-            if i < 2 :
-                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]))
+            if i == 0:
+                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi/6))
+            elif i == 1:
+                self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi/10))
             elif i == 2:
-                self.arms[0].set_joint_pos(i, pos_list[i]/100)
-            elif 3 < i < 8:
+                self.arms[0].set_joint_pos(i, pos_list[i]/100 - 0.26)
+            elif i == 4:
+                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) + (math.pi*3)/4)
+            elif i == 5:
                 self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]))
-            elif 8 <= i < 10:
-                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]))
+            elif i == 6:
+                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi/12)
+            elif i == 7:
+                self.arms[0].set_joint_pos(i - 1, np.deg2rad(pos_list[i]) - math.pi/12)
+            elif i == 8:
+                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi/6)
+            elif i == 9:
+                self.arms[1].set_joint_pos(i - 8, np.deg2rad(pos_list[i]) + math.pi/10)
             elif i == 10:
-                self.arms[1].set_joint_pos(i - 8, pos_list[i]/100)
-            elif 11 < i < 16:
+                self.arms[1].set_joint_pos(i - 8, pos_list[i]/100 - 0.26)
+            elif i == 12:
+                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) + (math.pi*3)/4)
+            elif i == 13:
                 self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]))
+            elif i == 14:
+                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi/12)
+            elif i == 15:
+                self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi/12)
+
+    def set_raven_force(self, pos_list):
+        scale = 1
+        for i in range(len(pos_list)):
+            if i == 0:
+                self.arms[0].set_joint_effort(i, (np.deg2rad(pos_list[i]) + (math.pi/6))/scale)
+            elif i == 1:
+                self.arms[0].set_joint_effort(i, (np.deg2rad(pos_list[i]) + (math.pi/10))/scale)
+            elif i == 2:
+                self.arms[0].set_joint_effort(i, (pos_list[i]/100 - 0.26)/scale)
+            elif i == 4:
+                self.arms[0].set_joint_effort(i - 1, (np.deg2rad(pos_list[i]) + (math.pi*3)/4)/scale)
+            elif i == 5:
+                self.arms[0].set_joint_effort(i - 1, (np.deg2rad(pos_list[i]))/scale)
+            elif i == 6:
+                self.arms[0].set_joint_effort(i - 1, (np.deg2rad(pos_list[i]) - math.pi/12)/scale)
+            elif i == 7:
+                self.arms[0].set_joint_effort(i - 1, (np.deg2rad(pos_list[i]) - math.pi/12)/scale)
+            elif i == 8:
+                self.arms[1].set_joint_effort(i - 8, (np.deg2rad(pos_list[i]) + math.pi/6)/scale)
+            elif i == 9:
+                self.arms[1].set_joint_effort(i - 8, (np.deg2rad(pos_list[i]) + math.pi/10)/scale)
+            elif i == 10:
+                self.arms[1].set_joint_effort(i - 8, (pos_list[i]/100 - 0.26)/scale)
+            elif i == 12:
+                self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) + (math.pi*3)/4)/scale)
+            elif i == 13:
+                self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]))/scale)
+            elif i == 14:
+                self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) - math.pi/12)/scale)
+            elif i == 15:
+                self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) - math.pi/12)/scale)

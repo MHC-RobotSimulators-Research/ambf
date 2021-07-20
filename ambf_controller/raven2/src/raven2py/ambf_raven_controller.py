@@ -53,15 +53,19 @@ def do(q, raven, csvfloats):
                         control = q.get()
                 raven.i += 1
                 time.sleep(0.01)
-            while control[3]:
-                finished = False
+            while control[3] and not raven.finished:
                 start = time.time()
-                while not finished or not q.empty():
+                while not raven.finished or not q.empty():
                     curr_time = time.time() - start
                     if int(curr_time * 1000) > 110256:
-                        finished = True
+                        raven.finished = True
+                        print("Raven has completed set trajectory")
+                        break
                     raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
-                print("Raven has completed set trajectory")
+                    time.sleep(0.01)
+
+                if not q.empty():
+                    control = q.get()
 
         print("shutting down...\n")
         os.system('kill %d' % os.getpid())
