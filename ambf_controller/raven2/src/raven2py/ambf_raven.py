@@ -68,6 +68,9 @@ class ambf_raven:
         return self.homed[arm]
 
     def sine_dance(self,first_entry, arm, count, rampup_count):
+        '''
+        increments the robot position in a sine pattern
+        '''
         self.homed[arm] = False
         for i in range(self.raven_joints):
             offset = (i+arm)*math.pi/2
@@ -76,6 +79,9 @@ class ambf_raven:
             self.rampup_count[arm] += 1
 
     def manual_move(self, arm, x, y, z, gangle):
+        '''
+        moves the robot based on cartesian coordinates
+        '''
         curr_jp = np.array(self.arms[arm].get_all_joint_pos(), dtype = "float")
         curr_tm = fk.fwd_kinematics(arm, curr_jp)
         curr_tm[0,3] += x
@@ -89,6 +95,10 @@ class ambf_raven:
         self.next_jp[arm] = new_jp
 
     def move(self, first_entry, arm, count):
+        '''
+        uses the helper function manual move to slowly increment the robot's position until
+        it reaches the desired inputted position. uses a similar method structure to home
+        '''
         if(first_entry):
             for i in range(self.raven_joints):
                 self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
@@ -114,7 +124,7 @@ class ambf_raven:
             self.moved[arm] = False
         return self.moved[arm]
 
-        def control_move():
-            for arm in range(arms.length):
-                for i in range(self.arms[arm].get_num_joints()):
-                    self.arms[arm].set_joint_pos(i, self.next_jp[arm][i])
+        # def control_move():
+        #     for arm in range(arms.length):
+        #         for i in range(self.arms[arm].get_num_joints()):
+        #             self.arms[arm].set_joint_pos(i, self.next_jp[arm][i])

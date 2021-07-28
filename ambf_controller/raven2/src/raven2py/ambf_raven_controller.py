@@ -159,10 +159,10 @@ def get_input(q, stdin):
 
 
 def main():
-    raven = arav.ambf_raven()
-    q = multiprocessing.Queue()
-    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
-    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))
+    raven = arav.ambf_raven()#creates simulated raven
+    q = multiprocessing.Queue()#creates queue to commincate between processes
+    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))#for accessing standard input from the other process
+    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))#starts process
     p1.start()
     do(q, raven)
     p1.join()
