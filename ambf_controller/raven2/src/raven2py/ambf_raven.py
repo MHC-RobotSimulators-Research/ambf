@@ -80,6 +80,10 @@ class ambf_raven:
         return (self.arms[0].get_torque_command(), self.arms[1].get_torque_command)
 
     def set_raven_pos(self, pos_list):
+        '''
+        sets raven position based on array containing positions from the physical
+        raven robot. offsets are approximate and need finalization. indexing is intuitive
+        '''
         for i in range(len(pos_list)):
             if i == 0:
                 self.arms[0].set_joint_pos(i, np.deg2rad(pos_list[i]) + (math.pi/6))
@@ -111,6 +115,9 @@ class ambf_raven:
                 self.arms[1].set_joint_pos(i - 9, np.deg2rad(pos_list[i]) - math.pi/12)
 
     def set_raven_force(self, pos_list):
+        '''
+        a prototype for a similar method except using force instead of joint position
+        '''
         scale = 1
         for i in range(len(pos_list)):
             if i == 0:

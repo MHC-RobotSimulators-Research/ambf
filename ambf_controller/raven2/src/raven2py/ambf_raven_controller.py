@@ -19,11 +19,24 @@ using sine_dance and recording data to be used create ml file
 
 
 def control_reset():
+    '''
+    resets all control values
+    '''
     new_control = [False, False, False, False]
     return new_control
 
 def do(q, raven, csvfloats):
+    '''
+    performs the main actions of the robot based on the values
+    in the control array
+    '''
         control = [False, False, False, False]
+        '''
+        control[0] = homing
+        control[1] = sine dance
+        control[2] = quit
+        control[3] = file mode
+        '''
         while not control[2]:
             if not q.empty():
                 control = q.get()
@@ -31,6 +44,7 @@ def do(q, raven, csvfloats):
                 for i in range(raven.loop_rate):
                     if not i:
                         print("staring homing")
+                        #moves raven incrementally towards home position, if home position is reached, returns True
                         raven.homed[0] = raven.go_home(1, 1, i)
                         raven.homed[1] = raven.go_home(1, 0, i)
                     else:
@@ -39,11 +53,13 @@ def do(q, raven, csvfloats):
                     time.sleep(0.01)
                 if raven.homed[0] and raven.homed[1]:
                     print("Raven is homed!")
+                #checks the queue afterwards to see if user provided new input
                 if not q.empty():
                     control = q.get()
             while control[1]:
                 if raven.i == 0:
                     start = time.time()
+                    #similar to homing, moves raven incrementally in a sine pattern
                     raven.sine_dance(1, 1, raven.i, raven.rampup_count)
                     raven.sine_dance(1, 0, raven.i, raven.rampup_count)
                 else:
@@ -54,6 +70,10 @@ def do(q, raven, csvfloats):
                 raven.i += 1
                 time.sleep(0.01)
             while control[3] and not raven.finished:
+                '''
+                moves raven along a trajectory defined by a .csv function with 7 columns for each
+                joint position in the desired movement
+                '''
                 start = time.time()
                 while not raven.finished or not q.empty():
                     curr_time = time.time() - start
@@ -72,8 +92,12 @@ def do(q, raven, csvfloats):
         exit(0)
 
 def get_input(q, stdin):
+    '''
+    continuously loops to collect new inputs from user in order to switch
+    control modes
+    '''
     control = [False, False, False, False]
-    sys.stdin = stdin
+    sys.stdin = stdin #this is to access standard input in the thread
     print("Input Menu:\n")
     print("input 'h' for home\n")
     print("input 's' for sine dance\n")
@@ -106,12 +130,16 @@ def get_input(q, stdin):
 
 
 def main():
-    raven = arav.ambf_raven()
-    q = multiprocessing.Queue()
-    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
-    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))
-    p1.start()
-    with open("ravenpath.csv", mode = 'r') as file:
+    '''
+    runs the controller by initializing a thread to collect user inputs and
+    calling the do() method to move the robot according to what the user inputs
+    '''
+    raven = arav.ambf_raven()#creates raven object
+    q = multiprocessing.Queue()#creates queue for sharing data between main thread and get_input thread
+    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))#connects standard input to thread
+    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))#creates multiprocess
+    p1.start()#starts multiprocess
+    with open("ravenpath.csv", mode = 'r') as file:#loads .csv file
         csvFile = csv.reader(file)
         csvfloats = np.zeros((110255, 16), dtype = "float")
         i = 0
