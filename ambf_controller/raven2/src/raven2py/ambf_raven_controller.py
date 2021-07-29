@@ -30,66 +30,66 @@ def do(q, raven, csvfloats):
     performs the main actions of the robot based on the values
     in the control array
     '''
-        control = [False, False, False, False]
-        '''
-        control[0] = homing
-        control[1] = sine dance
-        control[2] = quit
-        control[3] = file mode
-        '''
-        while not control[2]:
+    control = [False, False, False, False]
+    '''
+    control[0] = homing
+    control[1] = sine dance
+    control[2] = quit
+    control[3] = file mode
+    '''
+    while not control[2]:
+        if not q.empty():
+            control = q.get()
+        while control[0]and not any(raven.homed): #if after homing, code breaks, needs assistance
+            for i in range(raven.loop_rate):
+                if not i:
+                    print("staring homing")
+                    #moves raven incrementally towards home position, if home position is reached, returns True
+                    raven.homed[0] = raven.go_home(1, 1, i)
+                    raven.homed[1] = raven.go_home(1, 0, i)
+                else:
+                    raven.homed[0] = raven.go_home(0, 1, i)
+                    raven.homed[1] = raven.go_home(0, 0, i)
+                time.sleep(0.01)
+            if raven.homed[0] and raven.homed[1]:
+                print("Raven is homed!")
+            #checks the queue afterwards to see if user provided new input
             if not q.empty():
                 control = q.get()
-            while control[0]and not any(raven.homed): #if after homing, code breaks, needs assistance
-                for i in range(raven.loop_rate):
-                    if not i:
-                        print("staring homing")
-                        #moves raven incrementally towards home position, if home position is reached, returns True
-                        raven.homed[0] = raven.go_home(1, 1, i)
-                        raven.homed[1] = raven.go_home(1, 0, i)
-                    else:
-                        raven.homed[0] = raven.go_home(0, 1, i)
-                        raven.homed[1] = raven.go_home(0, 0, i)
-                    time.sleep(0.01)
-                if raven.homed[0] and raven.homed[1]:
-                    print("Raven is homed!")
-                #checks the queue afterwards to see if user provided new input
-                if not q.empty():
-                    control = q.get()
-            while control[1]:
-                if raven.i == 0:
-                    start = time.time()
-                    #similar to homing, moves raven incrementally in a sine pattern
-                    raven.sine_dance(1, 1, raven.i, raven.rampup_count)
-                    raven.sine_dance(1, 0, raven.i, raven.rampup_count)
-                else:
-                    raven.sine_dance(0, 1, raven.i, raven.rampup_count)
-                    raven.sine_dance(0, 0, raven.i, raven.rampup_count)
-                    if not q.empty():
-                        control = q.get()
-                raven.i += 1
-                time.sleep(0.01)
-            while control[3] and not raven.finished:
-                '''
-                moves raven along a trajectory defined by a .csv function with 7 columns for each
-                joint position in the desired movement
-                '''
+        while control[1]:
+            if raven.i == 0:
                 start = time.time()
-                while not raven.finished or not q.empty():
-                    curr_time = time.time() - start
-                    if int(curr_time * 1000) > 110256:
-                        raven.finished = True
-                        print("Raven has completed set trajectory")
-                        break
-                    raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
-                    time.sleep(0.01)
-
+                #similar to homing, moves raven incrementally in a sine pattern
+                raven.sine_dance(1, 1, raven.i, raven.rampup_count)
+                raven.sine_dance(1, 0, raven.i, raven.rampup_count)
+            else:
+                raven.sine_dance(0, 1, raven.i, raven.rampup_count)
+                raven.sine_dance(0, 0, raven.i, raven.rampup_count)
                 if not q.empty():
                     control = q.get()
+            raven.i += 1
+            time.sleep(0.01)
+        while control[3] and not raven.finished:
+            '''
+            moves raven along a trajectory defined by a .csv function with 7 columns for each
+            joint position in the desired movement
+            '''
+            start = time.time()
+            while not raven.finished or not q.empty():
+                curr_time = time.time() - start
+                if int(curr_time * 1000) > 110256:
+                    raven.finished = True
+                    print("Raven has completed set trajectory")
+                    break
+                raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                time.sleep(0.01)
 
-        print("shutting down...\n")
-        os.system('kill %d' % os.getpid())
-        exit(0)
+            if not q.empty():
+                control = q.get()
+
+    print("shutting down...\n")
+    os.system('kill %d' % os.getpid())
+    exit(0)
 
 def get_input(q, stdin):
     '''
