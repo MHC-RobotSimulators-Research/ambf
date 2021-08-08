@@ -8,16 +8,21 @@
 printf "\n To run the code, make sure an external roscore is running.\n"
 printf " To run the AMBF Controller, change the world settings in the \n"
 printf " launch.yaml file to enable raven_world.yaml.\n"
-printf " Press any key to continue (ctrl-C to quit)"
-read -n 1 -s -r -p "..."
-
-
+printf " Choose your option below: \n"
+printf "    \"p\" for python controller\n"
+printf "    \"c\" for cpp controller\n"
+printf "    \"ctrl-c\" to quit\n"
+read user
 
 printf "\n Run the AMBF Simulator.  (On a new terminal)"
 cd ../bin/lin-x86_64/
-gnome-terminal -e "./ambf_simulator --launch_file ../../ambf_controller/raven2/launch.yaml -l0"
-
-
-
-printf "\n Run the AMBF Controller. (Here!)\n"
-./raven_controller
+gnome-terminal -- ./ambf_simulator -l 3
+sleep 5
+if [[ "$user" == "p" ]] ; then
+    printf "\n Run the AMBF Python Controller. (Here!)\n"
+    cd ../../ambf_controller/raven2/scripts/
+    python ambf_raven_controller.py
+else
+    printf "\n Run the AMBF Cpp Controller. (Here!)\n"
+    ./raven_controller
+fi

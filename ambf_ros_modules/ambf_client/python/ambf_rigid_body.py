@@ -609,7 +609,7 @@ class RigidBody(BaseObject):
             self._cmd.joint_cmds_types[index] = RigidBodyCmd.TYPE_FORCE
 
         #self._cmd.joint_cmds = efforts
-        self._apply_command()     
+        self._apply_command()
 
     def set_joint_pos(self, joint_name_or_idx, q):
         """
@@ -664,7 +664,7 @@ class RigidBody(BaseObject):
             self._cmd.joint_cmds_types[index] = RigidBodyCmd.TYPE_POSITION
 
         #self._cmd.joint_cmds = efforts
-        self._apply_command()     
+        self._apply_command()
 
 
     def set_joint_vel(self, joint_name_or_idx, q):
@@ -720,7 +720,7 @@ class RigidBody(BaseObject):
             self._cmd.joint_cmds_types[index] = RigidBodyCmd.TYPE_VELOCITY
 
         #self._cmd.joint_cmds = efforts
-        self._apply_command()   
+        self._apply_command()
 
     def _clear_command(self):
         """

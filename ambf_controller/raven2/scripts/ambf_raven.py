@@ -21,7 +21,13 @@ class ambf_raven:
         self.homed = [False, False]
         self.moved = [False, False]
         self.limited = [False, False]
-        self.arms = [self._client.get_obj_handle('raven_2/base_link_L'), self._client.get_obj_handle('raven_2/base_link_R')]
+        self.arms = [self._client.get_obj_handle('raven_2/base_link_L'),
+                     self._client.get_obj_handle('raven_2/base_link_R')]
+        self.links = []
+        for i in range(2):
+            link_names = self.arms[i].get_children_names()
+            for j in range(self.arms[i].get_num_of_children()):
+                self.links.append(self._client.get_obj_handle('raven_2/'+link_names[j]))
         self.start_jp = np.zeros((2,7)) #indexed at 0
         self.delta_jp = np.zeros((2,7))
         self.home_joints = ard.HOME_JOINTS
@@ -78,6 +84,25 @@ class ambf_raven:
 
     def get_t_command(self):
         return (self.arms[0].get_torque_command(), self.arms[1].get_torque_command)
+
+    def get_raven_status(self):
+        status = []
+        for arm in range(2):
+            status.extend(self.arms[arm].get_all_joint_pos())     # 7 numbers
+            status.extend(self.arms[arm].get_all_joint_vel())     # 7 numbers
+            #status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
+
+            link_names = self.arms[arm].get_children_names()
+            for j in range(self.arms[arm].get_num_of_children()):
+                curr_link = self._client.get_obj_handle('raven_2/'+link_names[j])
+                status.extend(curr_link.get_pose())                     # 6 numbers
+                vel = curr_link.get_linear_vel()
+                avel = curr_link.get_angular_vel()
+                status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z]) # 6 numbers
+            # frc = self.arms[arm].get_force_command()
+            # trq = self.arms[arm].get_torque_command()
+            #status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
+        return status
 
     def set_raven_pos(self, pos_list):
         '''

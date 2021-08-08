@@ -9,7 +9,7 @@ import math
 import numpy as np
 import ambf_raven as arav
 import csv
-
+record = False # this flag determines whether ambf raven states are recorded
 
 '''
 author: Sean
@@ -74,15 +74,31 @@ def do(q, raven, csvfloats):
             moves raven along a trajectory defined by a .csv function with 7 columns for each
             joint position in the desired movement
             '''
-            start = time.time()
-            while not raven.finished or not q.empty():
-                curr_time = time.time() - start
-                if int(curr_time * 1000) > 110256:
-                    raven.finished = True
-                    print("Raven has completed set trajectory")
-                    break
-                raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
-                time.sleep(0.01)
+            if record:
+                with open('raven_state_record.csv', 'wb') as file:
+                    writer = csv.writer(file)
+                    start = time.time()
+
+                    while not raven.finished or not q.empty():
+                        curr_time = time.time() - start
+                        if int(curr_time * 1000) > 110256:
+                            raven.finished = True
+                            print("Raven has completed set trajectory")
+                            break
+                        raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                        line = raven.get_raven_status()
+                        if report:
+                            writer.writerow(line)
+            else:
+                start = time.time()
+                while not raven.finished or not q.empty():
+                    curr_time = time.time() - start
+                    if int(curr_time * 1000) > 110256:
+                        raven.finished = True
+                        print("Raven has completed set trajectory")
+                        break
+                    raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                    time.sleep(0.01)
 
             if not q.empty():
                 control = q.get()
@@ -101,6 +117,7 @@ def get_input(q, stdin):
     print("Input Menu:\n")
     print("input 'h' for home\n")
     print("input 's' for sine dance\n")
+    print("input 'f' for motion from file\n")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = raw_input()
