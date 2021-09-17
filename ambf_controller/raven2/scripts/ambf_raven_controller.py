@@ -17,11 +17,11 @@ ambf_raven_controller is a Client for operating the ambf_raven simulated robot
 
 
 def control_reset():
-    new_control = [False, False, False, False]
+    new_control = [False, False, False, False, False]
     return new_control
 
 def do(q, raven):
-        control = [False, False, False, False]
+        control = [False, False, False, False, False]
         while not control[2]:
             if not q.empty():
                 control = q.get()
@@ -114,6 +114,38 @@ def do(q, raven):
                     print("Raven has moved!")
                 if not q.empty():
                     control = q.get()
+        while control[4] and not raven.finished:
+            '''
+            moves raven along a trajectory defined by a .csv function with 7 columns for each
+            joint position in the desired movement
+            '''
+            if record:
+                with open('raven_state_record.csv', 'wb') as file:
+                    writer = csv.writer(file)
+                    start = time.time()
+
+                    while not raven.finished or not q.empty():
+                        curr_time = time.time() - start
+                        if int(curr_time * 1000) > 110256:
+                            raven.finished = True
+                            print("Raven has completed set trajectory")
+                            break
+                        raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                        line = raven.get_raven_status()
+                        if report:
+                            writer.writerow(line)
+            else:
+                start = time.time()
+                while not raven.finished or not q.empty():
+                    curr_time = time.time() - start
+                    if int(curr_time * 1000) > 110256:
+                        raven.finished = True
+                        print("Raven has completed set trajectory")
+                        break
+                    raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                    time.sleep(0.01)
+            if not q.empty():
+                control = q.get()
 
 
 
@@ -127,6 +159,8 @@ def get_input(q, stdin):
     print("Input Menu:\n")
     print("input 'h' for home\n")
     print("input 's' for sine dance\n")
+    print("input 'm' for manual mode\n")
+    print("input 'f' for file mode\n")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = raw_input()
@@ -152,9 +186,15 @@ def get_input(q, stdin):
             print("Welcome to the Raven2 AMBF Manual Control Mode")
             userinput = raw_input("Input key to switch control modes\n")
             continue
+        elif userinput == 'f':
+            control[4] = True
+            q.put(control)
+            userinput = raw_input("Input key to switch control modes\n")
+            continue
         elif userinput == 'q':
             control[2] = True
             q.put(control)
+
 
 
 

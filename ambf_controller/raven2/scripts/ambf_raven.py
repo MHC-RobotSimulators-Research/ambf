@@ -21,6 +21,7 @@ class ambf_raven:
         self.homed = [False, False]
         self.moved = [False, False]
         self.limited = [False, False]
+	self.finished = False
         self.arms = [self._client.get_obj_handle('raven_2/base_link_L'), self._client.get_obj_handle('raven_2/base_link_R')]
         self.start_jp = np.zeros((2,7)) #indexed at 0
         self.delta_jp = np.zeros((2,7))
