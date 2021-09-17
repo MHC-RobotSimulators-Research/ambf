@@ -99,7 +99,6 @@ def do(q, raven, csvfloats):
                         break
                     raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
                     time.sleep(0.01)
-
             if not q.empty():
                 control = q.get()
 
