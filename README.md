@@ -9,37 +9,24 @@ The Python client can be used on any system that AMBF can run on[. See here for 
 
 # Running the Client
 1. Install ROS on your computer
-1. Clone this [repository](https://github.com/MHC-RobotSimulators-Research/ambf?organization=MHC-RobotSimulators-Research&organization=MHC-RobotSimulators-Research) onto your computer
-1. Follow these [instructions](https://github.com/WPI-AIM/ambf/wiki) for building ambf
-1. Once you’ve installed ROS and build ambf on your computer, open your terminal
-1. Run roscore
-![Text
+2. Clone this [repository](https://github.com/MHC-RobotSimulators-Research/ambf?organization=MHC-RobotSimulators-Research&organization=MHC-RobotSimulators-Research) onto your computer
+3. Follow these [instructions](https://github.com/WPI-AIM/ambf/wiki) for building ambf
+4. Once you’ve installed ROS and build ambf on your computer, open your terminal
+5. Run roscore
 
-Description automatically generated](https://lh3.googleusercontent.com/0s1Qj-gigEX1XxH3WsYHuRk-cS7E9cdfg2GW999Weivvsojdk6eduRZI6Jd5tFEB5Jq4Pg-0hvimspY\_Cqx4S0JhAWMd2fjD5UEWJpUJ3SVs9ZORd1-Jhh1cqzO-y2Df09MJwazw=s0)
 
-1. Open a new tab and navigate to /ambf/bin/<os> 
+6. Open a new tab and navigate to /ambf/bin/<os> 
 
-![Graphical user interface, text, application
 
-Description automatically generated](https://lh4.googleusercontent.com/5YGPuqTprYKvmpkPinQ1g-z0egYx8VJ3IqL\_qI1KZmIY3lfYhl055U0dgXYQvpbE-R2qexF3gGs6OVyMceJ6Vvw7Cn3MTsQ4g8j4z3Jnc2NbvxBMwgXv0pSbdo1L4V6CFsgKvi0P=s0)
+7. Run ./ambf\_simulator -l 3
 
-1. Run ./ambf\_simulator -l 3
 
-![Graphical user interface, text, website
+8. Open a new tab, navigate to ~/ambf/ambf\_controller/raven2/src/raven2py
 
-Description automatically generated](https://lh3.googleusercontent.com/7WZVEU89pe07ZU73UxKD3QnX8r7ejpdWVNB8Tj34KmSD0xoS1K5SuyONo8BymCSh0CF3yosDZB4VzOz91hUtMW\_\_id3OhXxADl\_I\_BdgZmE80vyuPzY0iAE77ttyJ4RIyXZX01Xt=s0)
 
-1. Open a new tab, navigate to ~/ambf/ambf\_controller/raven2/src/raven2py
+9. Run python ambf\_raven\_controller.py and follow instructions in the terminal
 
-![Graphical user interface, text
 
-Description automatically generated](https://lh3.googleusercontent.com/77QBQMl-XV1mAhi5U62XXtFPM8aB39TZCfKnO9D1vnjztdhclP6SlpoIJH6fcAhZD05HPmpcCSa6-bHOUATgQPljrANBv9Xjxqu4zSCZjcjdZAnNxYO0O8YHJasdnfSHk6Biv3F7=s0)
-
-1. Run python ambf\_raven\_controller.py and follow instructions in the terminal
-
-![Text
-
-Description automatically generated](https://lh3.googleusercontent.com/tH-I47zYwXOWmlD6PuejSSMXFbr3QbcWwas8kEUubja6w5RpXmdthVE1sT6I0eHZuqx9Kx92DW0nzKnKCM1QG2IZjVgvJzJM3a2QTMH3j7eLz8tP4X6mZPeuoNV6MPEvVT8CwAwY=s0)
 
 # Pieces of the Controller
 ## ambf\_raven\_def.py
