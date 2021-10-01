@@ -1,242 +1,115 @@
-# Asynchronous Multi-Body Framework (AMBF)
-### 1. Author: [Adnan Munawar](https://github.com/adnanmunawar) (amunawar@wpi.edu)
+﻿# Contributors
+1. Sean Fabrega (email: <fabre22s@mtholyoke.edu>)
+1. Melody Su (email: <msu@mtholyoke.edu>)
+# Description
+This is a Python client for the Raven II Surgical Robot in the Autonomous Multibody framework developed by Adnan Munawar. Prior to this project, there was a C++ client developed by Melody Su which had similar capabilities; however, it was in C++ and was not compatible with many other capabilities within the AMBF. Much of the client translates code from the C++ client (which is largely developed from the Raven II base code) and extends certain capabilities, such as manual control and moving based on .csv file joint instructions. Using this addition, one can operate the Raven II Surgical Robot in AMBF in 4 main function: homing, sine dance, manual cartesian operation and joint operation through file input. These functions will be explained later.
 
-#### Contributors:
-1. [Melody Su](https://github.com/melodysu83) (Email: --)
+# Usage
+The Python client can be used on any system that AMBF can run on[. See here for details.](https://github.com/seanfabrega/ambf#:~:text=the%20corresponding%20subfolder.-,4.%20Usage%3A,-4.1%20Tested%20Platforms)
 
+# Running the Client
+1. Install ROS on your computer
+1. Clone this [repository](https://github.com/MHC-RobotSimulators-Research/ambf?organization=MHC-RobotSimulators-Research&organization=MHC-RobotSimulators-Research) onto your computer
+1. Follow these [instructions](https://github.com/WPI-AIM/ambf/wiki) for building ambf
+1. Once you’ve installed ROS and build ambf on your computer, open your terminal
+1. Run roscore
+![Text
 
-### 2. [Wiki](https://github.com/WPI-AIM/ambf/wiki):
-Please checkout the [Wiki](https://github.com/WPI-AIM/ambf/wiki) for indepth details about AMBF, it's components, examples and concepts. You can also checkout the video below for a brief run down of some of the features of AMBF
+Description automatically generated](https://lh3.googleusercontent.com/0s1Qj-gigEX1XxH3WsYHuRk-cS7E9cdfg2GW999Weivvsojdk6eduRZI6Jd5tFEB5Jq4Pg-0hvimspY\_Cqx4S0JhAWMd2fjD5UEWJpUJ3SVs9ZORd1-Jhh1cqzO-y2Df09MJwazw=s0)
 
-[![AMBF Simulator](https://img.youtube.com/vi/9REJVK1mwEU/maxresdefault.jpg)](https://www.youtube.com/watch?v=9REJVK1mwEU&t=0s)
+1. Open a new tab and navigate to /ambf/bin/<os> 
 
+![Graphical user interface, text, application
 
-### 3. Description:
-This multi-body framework offers real-time dynamic simulation of multi-bodies (robots, free
-bodies and multi-link puzzles) coupled with real-time haptic interaction via several haptic devices
-(CHAI-3D) (including dVRK Manipulators and Razer Hydras). It also provides a python client for training NN and
-RL Agents on real-time data with simulation in the loop. This framework is built around several
-external tools that include an extended version of CHAI-3D (developed along-side AMBF), BULLET-Physics, Open-GL, GLFW, yaml-cpp, pyyaml and Eigen to name a few. Each external library has it's own license that can be found in the corresponding subfolder.
+Description automatically generated](https://lh4.googleusercontent.com/5YGPuqTprYKvmpkPinQ1g-z0egYx8VJ3IqL\_qI1KZmIY3lfYhl055U0dgXYQvpbE-R2qexF3gGs6OVyMceJ6Vvw7Cn3MTsQ4g8j4z3Jnc2NbvxBMwgXv0pSbdo1L4V6CFsgKvi0P=s0)
 
-### 4. Usage:
-#### 4.1 Tested Platforms:
-AMBF has been tested on **Ubuntu 16.04** and **Ubuntu 18.04**. We need a few extra steps on **Ubuntu 14.04**, please create an issue if you would like to get instructions for that.
+1. Run ./ambf\_simulator -l 3
 
-Even though it is recommended to use Linux for the full feature set of AMBF Simulator using ROS, AMBF has been tested on **MacOS Maverick** and **MacOS Mojave** without ROS support.
+![Graphical user interface, text, website
 
+Description automatically generated](https://lh3.googleusercontent.com/7WZVEU89pe07ZU73UxKD3QnX8r7ejpdWVNB8Tj34KmSD0xoS1K5SuyONo8BymCSh0CF3yosDZB4VzOz91hUtMW\_\_id3OhXxADl\_I\_BdgZmE80vyuPzY0iAE77ttyJ4RIyXZX01Xt=s0)
 
-#### 4.2 Building:
-On Linux machines, you might need to install the `libasound2-dev` package and external libraries dependencies.
+1. Open a new tab, navigate to ~/ambf/ambf\_controller/raven2/src/raven2py
 
-```
-sudo apt install libasound2-dev libgl1-mesa-dev xorg-dev
-```
+![Graphical user interface, text
 
-Boost libraires ship with Ubuntu systems, but on Mac OS, you might need to install them explicitly.
+Description automatically generated](https://lh3.googleusercontent.com/77QBQMl-XV1mAhi5U62XXtFPM8aB39TZCfKnO9D1vnjztdhclP6SlpoIJH6fcAhZD05HPmpcCSa6-bHOUATgQPljrANBv9Xjxqu4zSCZjcjdZAnNxYO0O8YHJasdnfSHk6Biv3F7=s0)
 
-For this purpose, on **Mac OS**, if you don't have Boost
+1. Run python ambf\_raven\_controller.py and follow instructions in the terminal
 
-1. Install **Xcode** from App Store
-2. Install **command line tools** by running in terminal
-`xcode-select --install`
-3. Install **Homebrew** view running this in terminal
-`/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
+![Text
 
-4. Install **boost** by running the following in the terminal
-`brew install boost`
+Description automatically generated](https://lh3.googleusercontent.com/tH-I47zYwXOWmlD6PuejSSMXFbr3QbcWwas8kEUubja6w5RpXmdthVE1sT6I0eHZuqx9Kx92DW0nzKnKCM1QG2IZjVgvJzJM3a2QTMH3j7eLz8tP4X6mZPeuoNV6MPEvVT8CwAwY=s0)
 
-
-To build the framework (Linux and Mac-OS) and get various addon scripts (blender, yaml <-> urdf):
-```
-cd ~
-git clone https://github.com/WPI-AIM/ambf.git
-cd ambf && mkdir build
-git submodule update --init --recursive
-cd build
-cmake ..
-make
-```
-
-On Linux systems, please source the correct folder to achieve system wide availability of AMBF ROS modules.
-While in the build folder, you can run:
-
-`source ./devel/setup.bash`
-
-You can also permanently add the install location in your .bashrc with the following command:
-
-`echo "source ~/ambf/build/devel/setup.bash" >> ~/.bashrc`
-
-#### 4.3 Running the Simulator:
-Having succesfully completed the steps above running is Simulator is easy. Depending
-on what OS you're using simply follow the commands below:
-
-```
-cd ~/ambf/bin/<os>
-./ambf_simulator
-```
-
-#### 4.4 Launching Specific Multibodies:
-There are two ways to launch multibodies:
-1. Using the integer index of the filename specified in the launch file
-2. Providing the explicit filename(s).
-
-##### 4.4.1 Using the Integer Index in the launch file
-The -l command line argument can be used to launch a specific multibody at launch using indexing. The multibodies are defined in [ambf_models/descriptions/launch.yaml](https://github.com/WPI-AIM/ambf/blob/master/ambf_models/descriptions/launch.yaml) and are commented with indices for ease of identification. As a default behaviour, launching the simulator without the `-l` command line argument loads the first multi-body defined in the `launch.yaml`. To launch a specific multi-body you can use the `-l` flag with the integer index of the multi-body as follows:
-
-```
-cd ~/ambf/bin/<os>
-./ambf_simulator -l 4
-```
-This command will launch the 4th body defined in the `launch.yaml` file. To launch multiple multi-bodies, you can use a comma separated list (without spaces in between) of integers indices e.g.`./ambf_simulator -l 1,6,10`. This in turn would load the multi-bodies defined at 1, 6 and the 10th index in the `launch.yaml` file.
-
-##### 4.4.2 Providing the fully qualified filename
-The second option is to use the `-a` flag. For example, if one has an AMBF description file in the home directory `/users/potato/tests/robot.yaml`, this file can be launched directly as follows
-
-```
-cd ~/ambf/bin/<os>
-./ambf_simulator -a /users/potato/tests/robot.yaml
-```
-
-Similarly, as it the case with the `-l` flag, multiple filenames can be launch by comma separated values. E.g.
+# Pieces of the Controller
+## ambf\_raven\_def.py
+This file defines important constants for mapping the motion trajectory of the Raven II, whether that be homing, sine dance, or manual control, adapted from the file ambf\_defines.cpp in the AMBF original git repository. It also contains a lot of other information about the measurements and characteristics of the Raven II, including:
 
 
-```
-cd ~/ambf/bin/<os>
-./ambf_simulator -a /users/potato/tests/robot.yaml,/users/potato/tests/car.yaml
-```
+|CAMERA\_COUNT|RAVEN\_JOINTS|RAVEN\_ARMS|
+| :- | :- | :- |
+|RAVEN\_IKSOLS|LOOP\_RATE|Eps|
+|MAX\_JOINTS|MIN\_JOINTS|HOME\_JOINT|
+|DANCE\_SCALE\_JOINTS|RAVEN\_JOINT\_LIMITS|RAVEN\_DH\_ALPHA|
+|RAVEN\_DH\_THETA|RAVEN\_DH\_A|RAVEN\_DH\_D|
+|RAVEN\_IKIN\_PARAM|RAVEN\_T\_B0|RAVEN\_T\_CB|
 
-Lastly, the `-l` and `-a` flags can be used together to launch some files based on the index and some based on the filenames.
-
-##### 4.4.3 Note:
-The AMBF Simulator uses the yaml file located in `ambf/ambf_models/descriptions/launch.yaml` to
-load robot/multi-body models, haptic device end-effectors and the world. You can see the contents
-of this file by launching it in your favourite text editor. For an initial overview, the most important thing is the field `multibody configs:`. The uncommented config file(s) will be launced at startup. Multiple
-config files can be launched at the same time by uncommenting them. You can play around with a few config
-files to see how they work.
-
-### 5 Interacting with the Robots/Multi-Bodies in the Simulator:
-There are multiple way of interacting with the bodies in simulator. If you are using Linux, the
-provided Python client offers a convenient user interface and robust API.
-
-For full feature set of the AMBF Simulator, it is advised that you install it on Linux (Ubuntu) 16, 17 or 18. Other variants might be supported but have not yet been tested.
-
-#### 5.1 The AMBF Python Client
-This simplest way to interact with simulated bodies, robots/multi-bodies, kinematic and visual objects in the AMBF simulator is by using the high-speed Asynchronous Communication that is implemented via ROS-topics in the AMBF Framework Library. One can use either C++ or Python for this purpose. For ease of interaction we provide a convenient Python Client which can be used as follows:
-
-##
-Start the AMBF Simulator with your choice of Multi-Body config file that (set in the `multi bodies` field in the `ambf_models/launch.yaml` file).
-
-In your python application
-
-```python
-# Import the Client from ambf_comm package
-# You might have to do: pip install gym
-from ambf_client import Client
-import time
-
-# Create a instance of the client
-_client = Client()
-
-# Connect the client which in turn creates callable objects from ROS topics
-# and initiates a shared pool of threads for bidrectional communication
-_client.connect()
-
-# You can print the names of objects found
-print(_client.get_obj_names())
-
-# Lets say from the list of printed names, we want to get the
-# handle to an object names "Torus"
-torus_obj = _client.get_obj_handle('Torus')
-
-# Now you can use the torus_obj to set and get its position, rotation,
-# Pose etc. If the object has joints, you can also control them
-# in either position control mode or open loop effort mode. You can even mix and
-# match the joints commands
-torus_obj.set_pos(0, 0, 0) # Set the XYZ Pos in obj's World frame
-torus_obj.set_rpy(1.5, 0.7, .0) # Set the Fixed RPY in World frame
-time.sleep(5) # Sleep for a while to see the effect of the command before moving on
-
-# Other methods to control the obj position include
-# torus_obj.set_pose(pose_cmd) # Where pose_cmd is of type Geometry_msgs/Pose
-# torus_obj.set_rot(quaterion) # Where quaternion is a list in the order of [qx, qy, qz, qw]
-# Finally all the position control params can be controlled in a single method call
-# torus_obj.pose_command(px, py, pz, roll, pitch, yaw, *jnt_cmds)
-
-# We can just as easily get the pose information of the obj
-cur_pos = torus_obj.get_pos() # xyx position in World frame
-cur_rot = torus_obj.get_rot() # Quaternion in World frame
-cur_rpy = torus_obj.get_rpy() # Fixed RPY in World frame
-
-# Similarly you can directly control the wrench acting on the obj by
-# The key difference is that it's the user's job to update the forces
-# and torques in a loop otherwise the wrench in cleared after an internal
-# watchdog timer expires if a new command is not set. This is for safety
-# reasons where a user shouldn't set a wrench and then forget about it.
-for i in range(0, 5000):
-    torus_obj.set_force(5, -5, 10) # Set the force in the World frame
-    torus_obj.set_torque(0, 0, 0.8) # Set the torque in the World frame
-    time.sleep(0.001) # Sleep for a while to see the effect of the command before moving on
-
-# Similar to the pose_command, one can assign the force in a single method call
-# torus_obj.wrench_command(fx, fy, fz, nx, ny, nz) in the World frame
-
-# We can get the number of children and joints connected to this body as
-num_joints = torus_obj.get_num_joints() # Get the number of joints of this object
-children_names = torus_obj.get_children_names() # Get a list of children names belonging to this obj
-
-print(num_joints)
-print(children_names)
-
-# If the obj has some joints, we can control them as follows
-if num_joints > 1:
-    torus_obj.set_joint_pos(0, 0.5) # The the joints at idx 0 to 0.5 Radian
-    torus_obj.set_joint_effort(1, 5) # Set the effort of joint at idx 1 to 5 Nm
-    time.sleep(2) # Sleep for a while to see the effect of the command before moving on
+## ambf\_raven.py
+This file defines the ambf\_raven object which contains attributes and methods for controlling the simulated raven. It connects the controller to the Raven II in the simulator upon initialization and uses values from the ambf\_raven\_def.py to help plan motion for the various control modes. 
+### Variables
 
 
-# Lastly to cleanup
-_client.clean_up()
-```
+|\_client|homed|moved|
+| :- | :- | :- |
+|limited|arms|start\_jp|
+|delta\_jp|home\_joints|next\_jp|
+|dance\_scale\_joints|loop\_rate|raven\_joints|
+|rc|rampup\_count|i|
+|speed|rampup\_speed||
+### Methods
 
-### 6 Raven and DVRK Kinematics Controller Client
-See [here](/ambf_controller/README.md) for more information.
 
-### 7 AMBF Network Setup:
-In order to subscribe and publish data using AMBF over multiple machines, the following steps would need to be followed:
-1. Check the connectivity between the machines (example: using ssh and ping)
-2. Edit the `/etc/hosts` and add the hostnames of the machines, so that the machines can find each other over the network (example: similar to [Adding host name to /etc/hosts](https://www.howtogeek.com/howto/27350/beginner-geek-how-to-edit-your-hosts-file/))
-3. Set the ROS environment variable in local machine to the host using `export ROS_MASTER_URI=http://hostIPaddress:11311` (ex: export ROS_MASTER_URI=http://112.115.256.121:11311)
-4. Now you should be able to send and receive ROS messages over the two machines and control AMBF.
-5. If you face any firewall issues or if you are unable to receive/publish any ROS topics over the two machines, follow the next step.
-6. Open a terminal and type the command:  `sudo apt-get install gufw`
-7. Next type `sudo gufw` (type the password when prompted) and ensure both the Incoming and Outgoing traffic is allowed.
+|go\_home|sine\_dance|manual\_move|
+| :- | :- | :- |
+|move|control\_move||
+#### *go\_home*
+This method gradualizes the movement of the Raven II arms from the starting position to the home position, defined using the home\_joints array. The method should be called loop\_rate times and should reach the final position upon the last call of the method. If the arm is homed by the end of the final iteration, the method should return True. Otherwise it returns False. The application of this method will make more sense in the context of the ambf\_raven\_controller.py.
+#### *sine\_dance*
+This method slowly moves the Raven arm in a sine motion, using a sine function to move each joint. Similar to the method above, the function should be repeatedly called in a loop until the user changes control modes.
+#### *manual\_move*
+This used forward and inverse kinematics to create a new desired joint position array based on the change in cartesian position. In planning this method, I basically following this model:
 
-### 8 Docker
-In order to use the docker file, follow the instructions [here](https://docs.docker.com/install/) to install docker on your system. To run the file:  
+#### *move*
+This method uses a similar process to the go\_home method, but instead of HOME\_JOINTS, the method will gradually move the arm to the next desired position passed into the function. Because of the nature of the process, the movement will always take the same speed, regardless of the distance needed to travel.
 
-```bash
-cd ~/
-git clone https://github.com/WPI-AIM/ambf.git && cd ambf
-sudo service docker start
-docker build --rm -f "Dockerfile" -t ambf:latest "."
-docker run --rm -it  ambf:latest
-cd /ambf/bin/lin-x86_64/
-./ambf_simulator -g off
-```
+## raven\_fk.py
+This file contains all the methods for performing forward kinematics. There is more information in the documentation of the file for the specific processes for deriving the transformation matrices from the joint positions.
+## raven\_ik.py
+This file contains all the methods for performing inverse kinematics. There is more information in the documentation of the file for the specific processes for deriving the joint positions from the transformation matrix.
+# ambf\_raven\_controller.py
+This file is what I would consider the main function of the control program. It is the one that controls the user inputs and “talks” to the raven, for it to move. It uses an array of control switches (an array of booleans) to turn on and off certain control modes: home, sine dance, manual control and quit. In order to simultaneously wait for user input and also operate the robot, the file uses python threading and queues to communicate between the threads. For more information, look at the documentation for the file. 
+## utilities.py
+This file already existed in the ambf python controller for dVRK in the original github repository, however I copied it for my controller and added a few functions to mimic the methods defined in the C++ class for transformation matrices. 
+# Capabilities of the Controller
+## Homing
+When the homing control mode is entered, both raven arms move to a predefined position defined in the ambf\_raven\_def.py file. Once it reaches that position, it will stay until another control mode is entered.
+## Sine Dance
+When the sine dance mode is entered, the raven arms will move in a dance pattern defined by a sine function in the ambf\_raven.py file. It will continue to move until another control mode is entered. 
+## Manual Move
+When the manual mode is entered, the raven arms will move in a predefined direction based on hard-coded instructions in the file. This can be hard coded by setting the values in the arrays for each x, y, z array to the distance in each direction each arm should move. It will move until that position has been assumed and then stay in that position.
+## “Read File” Move
+When read file mode is entered, the raven arms will move in a predefined direction based on instructions from an inputted .csv file containing joint angle data at given time stamps. Typically, this file is created from a rosbag file produced from an actual Raven II robot. This mode is especially useful for comparing movement data between the simulated and real-life Raven II surgical robot.
 
-## Citation
-If this work is helpful for your research, please use the following reference for citation:
-```
-@INPROCEEDINGS{8968568,
-author={A. {Munawar} and Y. {Wang} and R. {Gondokaryono} and G. S. {Fischer}},
-booktitle={2019 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)},
-title={A Real-Time Dynamic Simulator and an Associated Front-End Representation Format for Simulating Complex Robots and Environments},
-year={2019},
-volume={},
-number={},
-pages={1875-1882},
-keywords={},
-doi={10.1109/IROS40897.2019.8968568},
-ISSN={2153-0858},
-month={Nov},}
-```
+# Limitation of the Controller
+1. No soft body support
+1. No manual control in real time
+1. Slow to move short distances – as of now, the client is designed to take the same amount of time to move the robot any distance in manual mode. So the speed of the movement is directly related to the distance needed to travel.
+
+
+
+
+
+#
+
+
+` `PAGE 1
