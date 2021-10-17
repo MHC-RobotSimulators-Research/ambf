@@ -83,7 +83,7 @@ def do(q, raven, csvData):
 
                     while not raven.finished or not q.empty():
                         curr_time = time.time() - start
-                        if int(curr_time * 1000) > 110256:
+                        if int(curr_time * 1000) > csvData.shape[1]:
                             raven.finished = True
                             print("Raven has completed set trajectory")
                             break
@@ -94,7 +94,7 @@ def do(q, raven, csvData):
                 start = time.time()
                 while not raven.finished or not q.empty():
                     curr_time = time.time() - start
-                    if int(curr_time * 1000) > 110256:
+                    if int(curr_time * 1000) > csvData.shape[1]:
                         raven.finished = True
                         print("Raven has completed set trajectory")
                         break
