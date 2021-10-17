@@ -1,7 +1,6 @@
 import multiprocessing
 import pygame
 import sys
-sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 import os
 import time
 from ambf_client import Client
@@ -9,7 +8,7 @@ import math
 import numpy as np
 import ambf_raven as arav
 import csv
-record = False # this flag determines whether ambf raven states are recorded
+import ambf_raven_def as ard
 
 '''
 author: Sean
@@ -17,6 +16,7 @@ ambf_raven_controller is a Client for operating the ambf_raven simulated robot, 
 using sine_dance and recording data to be used create ml file
 '''
 
+sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 
 def control_reset():
     '''
@@ -25,7 +25,7 @@ def control_reset():
     new_control = [False, False, False, False]
     return new_control
 
-def do(q, raven, csvfloats):
+def do(q, raven, csvData):
     '''
     performs the main actions of the robot based on the values
     in the control array
@@ -74,9 +74,11 @@ def do(q, raven, csvfloats):
             moves raven along a trajectory defined by a .csv function with 7 columns for each
             joint position in the desired movement
             '''
-            if record:
-                with open('raven_state_record.csv', 'wb') as file:
+            if ard.RECORD_FLAG:
+                with open(ard.TO_FILE, 'wb') as file:
                     writer = csv.writer(file)
+                    line = raven.get_raven_status(0,True)
+                    writer.writerow(line)
                     start = time.time()
 
                     while not raven.finished or not q.empty():
@@ -85,10 +87,9 @@ def do(q, raven, csvfloats):
                             raven.finished = True
                             print("Raven has completed set trajectory")
                             break
-                        raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
-                        line = raven.get_raven_status()
-                        if report:
-                            writer.writerow(line)
+                        raven.set_raven_pos(csvData[int(curr_time * 1000)])
+                        line = raven.get_raven_status(int(curr_time * 1000))
+                        writer.writerow(line)
             else:
                 start = time.time()
                 while not raven.finished or not q.empty():
@@ -97,7 +98,7 @@ def do(q, raven, csvfloats):
                         raven.finished = True
                         print("Raven has completed set trajectory")
                         break
-                    raven.set_raven_pos(csvfloats[int(curr_time * 1000)])
+                    raven.set_raven_pos(csvData[int(curr_time * 1000)])
                     time.sleep(0.01)
             if not q.empty():
                 control = q.get()
@@ -106,7 +107,7 @@ def do(q, raven, csvfloats):
     os.system('kill %d' % os.getpid())
     exit(0)
 
-def get_input(q, stdin):
+def get_input(q, stdin, file_valid):
     '''
     continuously loops to collect new inputs from user in order to switch
     control modes
@@ -116,7 +117,8 @@ def get_input(q, stdin):
     print("Input Menu:\n")
     print("input 'h' for home\n")
     print("input 's' for sine dance\n")
-    print("input 'f' for motion from file\n")
+    if file_valid:
+        print("input 'f' for motion from file\n")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = raw_input()
@@ -138,35 +140,51 @@ def get_input(q, stdin):
         elif userinput == 'q':
             control[2] = True
             q.put(control)
-        elif userinput == 'f':
+        elif userinput == 'f' and file_valid:
             control[3] = True
             q.put(control)
             userinput = raw_input("Input key to switch control modes\n")
 
+def file_loader():
+    file_valid = True
+    csvData= []
+    if os.path.exists(ard.FROM_FILE):
+        with open(ard.FROM_FILE, mode = 'r') as file:#loads .csv file
+            csvFile = csv.reader(file)
+            for lines in csvFile:
+                csvLine = []
+                for cell in lines:
+                    csvLine.append(float(cell.strip("\xef\xbb\xbf")))
+                csvData.append(csvLine)
+    np.asarray(csvData, dtype = "float")
 
+    # sanity check to see if the file follows the expected format
+    if (csvData.shape[0] == 0):
+        file_valid = False
+        print("Raven trajectory file empty or not found.")
+    elif (csvData.shape[1] != ard.COL_IN_FILE):
+        file_valid = False
+        print("Raven trajectory file format invalid. ("+str( ard.COL_IN_FILE)+" cols expected)")
+    return file_valid, csvData
 
 def main():
     '''
     runs the controller by initializing a thread to collect user inputs and
     calling the do() method to move the robot according to what the user inputs
     '''
-    raven = arav.ambf_raven()#creates raven object
-    q = multiprocessing.Queue()#creates queue for sharing data between main thread and get_input thread
-    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))#connects standard input to thread
-    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin))#creates multiprocess
-    p1.start()#starts multiprocess
-    with open("ravenpath.csv", mode = 'r') as file:#loads .csv file
-        csvFile = csv.reader(file)
-        csvfloats = np.zeros((110255, 16), dtype = "float")
-        i = 0
-        j = 0
-        for lines in csvFile:
-            for cell in lines:
-                csvfloats[i][j] = (float(cell.strip("\xef\xbb\xbf")))
-                j += 1
-            i += 1
-            j = 0
-    do(q, raven, csvfloats)
+    # load external raven trajectory file
+    file_valid, csvData = file_loader()
+    # creates raven object
+    raven = arav.ambf_raven()
+    # creates queue for sharing data between main thread and get_input thread
+    q = multiprocessing.Queue()
+    # connects standard input to thread
+    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
+    # creates multiprocess
+    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin, file_valid))
+    # starts multiprocess
+    p1.start()
+    do(q, raven, csvData)
     p1.join()
 
 

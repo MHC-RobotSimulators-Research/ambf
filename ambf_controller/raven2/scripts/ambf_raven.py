@@ -85,24 +85,39 @@ class ambf_raven:
     def get_t_command(self):
         return (self.arms[0].get_torque_command(), self.arms[1].get_torque_command)
 
-    def get_raven_status(self):
-        status = []
-        for arm in range(2):
-            status.extend(self.arms[arm].get_all_joint_pos())     # 7 numbers
-            status.extend(self.arms[arm].get_all_joint_vel())     # 7 numbers
-            #status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
+    def get_raven_status(self, time_now, first_entry = False):
+        if first_entry:
+            status = ["time"]
+            for arm in range(2):
+                for j in range(7):
+                    status.append("jpos"+str(arm*7+j))
+                for j in range(7):
+                    status.append("jvel"+str(arm*7+j))
+                link_names = self.arms[arm].get_children_names()
+                for pre in ["_pos","_apos","_vel","_avel"]:
+                    for j in range(self.arms[arm].get_num_of_children()):
+                        status.append(link_names[j]+pre+"x")
+                        status.append(link_names[j]+pre+"y")
+                        status.append(link_names[j]+pre+"z")
+            return status
+        else:
+            status = [time_now]
+            for arm in range(2):
+                status.extend(self.arms[arm].get_all_joint_pos())     # 7 numbers
+                status.extend(self.arms[arm].get_all_joint_vel())     # 7 numbers
+                #status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
 
-            link_names = self.arms[arm].get_children_names()
-            for j in range(self.arms[arm].get_num_of_children()):
-                curr_link = self._client.get_obj_handle('raven_2/'+link_names[j])
-                status.extend(curr_link.get_pose())                     # 6 numbers
-                vel = curr_link.get_linear_vel()
-                avel = curr_link.get_angular_vel()
-                status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z]) # 6 numbers
-            # frc = self.arms[arm].get_force_command()
-            # trq = self.arms[arm].get_torque_command()
-            #status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
-        return status
+                link_names = self.arms[arm].get_children_names()
+                for j in range(self.arms[arm].get_num_of_children()):
+                    curr_link = self._client.get_obj_handle('raven_2/'+link_names[j])
+                    status.extend(curr_link.get_pose())                     # 6 numbers
+                    vel = curr_link.get_linear_vel()
+                    avel = curr_link.get_angular_vel()
+                    status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z]) # 6 numbers
+                # frc = self.arms[arm].get_force_command()
+                # trq = self.arms[arm].get_torque_command()
+                #status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
+            return status
 
     def set_raven_pos(self, pos_list):
         '''
