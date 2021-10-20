@@ -75,6 +75,9 @@ class ambf_raven:
         return self.homed[arm]
 
     def sine_dance(self,first_entry, arm, count, rampup_count):
+        '''
+        increments the robot position in a sine pattern
+        '''
         self.homed[arm] = False
         for i in range(self.raven_joints):
             offset = (i+arm)*math.pi/2
