@@ -2,7 +2,7 @@
 ### 1. Author: [Adnan Munawar](https://github.com/adnanmunawar) (amunawar@wpi.edu)
 
 #### Contributors:
-1. [Melody Su](https://github.com/melodysu83) (Email: --)
+1. [Melody Su](https://github.com/melodysu83) (Email: msu@mtholyoke.edu)
 
 
 ### 2. [Wiki](https://github.com/WPI-AIM/ambf/wiki):

@@ -34,19 +34,19 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #
 #  $Author: Melody Su $
-#  $Date:  April, 2019 $
+#  $Date:  October, 2021 $
 #  $Rev:  $
 
 
 # common settings required to build examples
-include_directories (raven2/include)
+include_directories (raven2/cpp_controller/include)
 
-add_executable (raven_controller raven2/include/ambf_defines.h
-                                 raven2/include/ambf_controller.h
-                                 raven2/include/ambf_motion_planner.h
-                                 raven2/src/ambf_motion_planner.cpp
-                                 raven2/src/ambf_controller.cpp
-                                 raven2/src/ambf_defines.cpp
-                                 raven2/src/main.cpp )
+add_executable (raven_controller raven2/cpp_controller/include/ambf_defines.h
+                                 raven2/cpp_controller/include/ambf_controller.h
+                                 raven2/cpp_controller/include/ambf_motion_planner.h
+                                 raven2/cpp_controller/src/ambf_motion_planner.cpp
+                                 raven2/cpp_controller/src/ambf_controller.cpp
+                                 raven2/cpp_controller/src/ambf_defines.cpp
+                                 raven2/cpp_controller/src/main.cpp )
 
 target_link_libraries (raven_controller ${AMBF_LIBRARIES})

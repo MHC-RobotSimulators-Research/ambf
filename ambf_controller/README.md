@@ -2,8 +2,8 @@
 ## Description:
 The AMBF Controller is a C++ client that controls the simulated objects in the
 AMBF Simulator. It is an alternative to the python client described [here](https://github.com/WPI-AIM/ambf/wiki/The-Python-Client).
-The Raven2 control is imeplemented and well tested in the AMBF Controller. Robot
-kinematics is implemented in the module so both cartesian and joint space commands
+The Raven2 control is implemented and well tested in the AMBF Controller. Robot
+kinematics is implemented in the module so both Cartesian and joint space commands
 for Raven2 is supported.
 
 ## Usage:
