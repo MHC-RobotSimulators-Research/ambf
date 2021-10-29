@@ -22,7 +22,8 @@ def control_reset():
     '''
     resets all control values
     '''
-    new_control = [False, False, False, False]
+    new_control = [False, False, False, False, False]
+    #new_control = [False, False, False, False]
     return new_control
 
 def do(q, raven, csvData):
@@ -30,12 +31,15 @@ def do(q, raven, csvData):
     performs the main actions of the robot based on the values
     in the control array
     '''
-    control = [False, False, False, False]
+    control = [False, False, False, False, False]
+    #control = [False, False, False, False]
+
     '''
     control[0] = homing
     control[1] = sine dance
     control[2] = quit
     control[3] = file mode
+    control[4] = manual mode
     '''
     while not control[2]:
         if not q.empty():
@@ -103,6 +107,23 @@ def do(q, raven, csvData):
             if not q.empty():
                 control = q.get()
 
+        while control[4] and not any(raven.moved):
+            x = [0.11, 0.0]
+            y = [0.5, 0.0]
+            x = [0.0, 1.0]
+            raven.manual_move(0, x[0], y[0], z[0], 0)
+            raven.manual_move(1, x[1], y[1], z[1], 0)
+            for i in range(raven.loop_rate):
+                if not i:
+                    raven.moved[0] = raven.move(1,1,i)
+                    raven.moved[1] = raven.moved(1,0,i)
+                else:
+                    raven.moved[0] = raven.moved(0,1,i)
+                    raven.moved[1] = raven.moved(0,0,i)
+            if raven.moved[0] and raven.moved[1]:
+                print("Raven has moved!")
+            if not q.empy():
+                control = q.get()
     print("shutting down...\n")
     os.system('kill %d' % os.getpid())
     exit(0)
@@ -112,7 +133,8 @@ def get_input(q, stdin, file_valid):
     continuously loops to collect new inputs from user in order to switch
     control modes
     '''
-    control = [False, False, False, False]
+    control = [False, False, False, False, False]
+    # control = [False, False, False, False]
     sys.stdin = stdin #this is to access standard input in the thread
     print("Input Menu:\n")
     print("input 'h' for home\n")
@@ -142,6 +164,10 @@ def get_input(q, stdin, file_valid):
             q.put(control)
         elif userinput == 'f' and file_valid:
             control[3] = True
+            q.put(control)
+            userinput = raw_input("Input key to switch control modes\n")
+        elif userinput == 'm':
+            print("doing manual mode...")
             q.put(control)
             userinput = raw_input("Input key to switch control modes\n")
 
