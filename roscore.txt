@@ -1,0 +1,31 @@
+testing output here
+... logging to /home/IMeRo-6*/.ros/log/c7fa2068-53d2-11ec-a512-7412b3de2a69/roslaunch-IMeRo-6-3338.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;roscore
+[1mstarted roslaunch server http://IMeRo-6:33983/[0m
+ros_comm version 1.14.10
+
+
+SUMMARY
+========
+
+PARAMETERS
+ * /rosdistro: melodic
+ * /rosversion: 1.14.10
+
+NODES
+
+auto-starting new master
+[1mprocess[master]: started with pid [3348][0m
+[1mROS_MASTER_URI=http://IMeRo-6:11311/[0m
+]2;roscore http://IMeRo-6:11311/
+[1msetting /run_id to c7fa2068-53d2-11ec-a512-7412b3de2a69[0m
+[1mprocess[rosout-1]: started with pid [3359][0m
+started core service [/rosout]
+[rosout-1] killing on exit
+[master] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

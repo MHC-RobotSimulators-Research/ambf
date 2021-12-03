@@ -110,7 +110,7 @@ def do(q, raven, csvData):
         while control[4] and not any(raven.moved):
             x = [0.11, 0.0]
             y = [0.5, 0.0]
-            x = [0.0, 1.0]
+            z = [0.0, 1.0]
             raven.manual_move(0, x[0], y[0], z[0], 0)
             raven.manual_move(1, x[1], y[1], z[1], 0)
             for i in range(raven.loop_rate):
@@ -141,6 +141,7 @@ def get_input(q, stdin, file_valid):
     print("input 's' for sine dance\n")
     if file_valid:
         print("input 'f' for motion from file\n")
+    print("input 'm' for manual movement mode\n")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = raw_input()
@@ -167,6 +168,7 @@ def get_input(q, stdin, file_valid):
             q.put(control)
             userinput = raw_input("Input key to switch control modes\n")
         elif userinput == 'm':
+            control[4] = True
             print("doing manual mode...")
             q.put(control)
             userinput = raw_input("Input key to switch control modes\n")
