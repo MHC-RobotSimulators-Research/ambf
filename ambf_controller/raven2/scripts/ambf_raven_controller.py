@@ -43,7 +43,7 @@ def do(q, raven, csvData):
         while control[0]and not any(raven.homed): #if after homing, code breaks, needs assistance
             for i in range(raven.loop_rate):
                 if not i:
-                    print("staring homing")
+                    print("starting homing")
                     #moves raven incrementally towards home position, if home position is reached, returns True
                     raven.homed[0] = raven.go_home(1, 1, i)
                     raven.homed[1] = raven.go_home(1, 0, i)
@@ -83,7 +83,7 @@ def do(q, raven, csvData):
 
                     while not raven.finished or not q.empty():
                         curr_time = time.time() - start
-                        if int(curr_time * 1000) > csvData.shape[1]:
+                        if int(curr_time * 1000) >= csvData.shape[0]:
                             raven.finished = True
                             print("Raven has completed set trajectory")
                             break
@@ -94,12 +94,12 @@ def do(q, raven, csvData):
                 start = time.time()
                 while not raven.finished or not q.empty():
                     curr_time = time.time() - start
-                    if int(curr_time * 1000) > csvData.shape[1]:
+                    if int(curr_time * 50) >= csvData.shape[0]:
                         raven.finished = True
                         print("Raven has completed set trajectory")
                         break
-                    raven.set_raven_pos(csvData[int(curr_time * 1000)])
-                    time.sleep(0.01)
+                    raven.set_raven_pos(csvData[int(curr_time * 50)])
+                    #time.sleep(0.01)
             if not q.empty():
                 control = q.get()
 
@@ -156,7 +156,7 @@ def file_loader():
                 for cell in lines:
                     csvLine.append(float(cell.strip("\xef\xbb\xbf")))
                 csvData.append(csvLine)
-    np.asarray(csvData, dtype = "float")
+    csvData = np.asarray(csvData, dtype = "float")
 
     # sanity check to see if the file follows the expected format
     if (csvData.shape[0] == 0):
