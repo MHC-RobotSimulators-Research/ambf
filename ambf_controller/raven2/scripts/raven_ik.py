@@ -260,10 +260,10 @@ def inv_kinematics_p5(arm, input_cp, input_gangle):
         scth1[:3] = np.matmul(np.linalg.inv(Bmx), xyp05[:3]) * (1 / d)
         iksol[i][0] = m.atan2(scth1[1], scth1[0])
 
-    home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449, 0., 0., 0.52359878],
-                       [1.04719755, 1.88495559, -0.03, 2.35619449, 0., -0., 0.52359878]], dtype="float")
+    home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., 0., 0.52359878],
+                       [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., -0., 0.52359878]], dtype="float")
 
-    # Assign theta 4,5, and 6 to their home values for all iksol
+    # Assign theta 4,5, and 6 to their desired values for all iksol
     for i in range(numsols):
         for j in range(3, 6):
             iksol[i, j] = home_dh[arm, j]
