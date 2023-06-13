@@ -114,30 +114,38 @@ def do(q, raven, csvData, xbc):
         # Testing manual control from Seans dev branch
         while control[4]:
 
-            # x = [0.1, 0.0]
-            # y = [0.0, 0.0]
-            # z = [0.0, 0.0]
+            div = 100   # how much the raw input values will be divided by to produce the change in x,y,z
 
-            div = 1000
-
-            x = [xbc.get_lj_x() / div, xbc.get_rj_x() / div]
-            y = [xbc.get_lj_y() / div, xbc.get_rj_y() / div]
+            # Cartesian coordinates are relative to the current position
+            x = [0.0, 0.0]
+            y = [0.0, 0.0]
             z = [0.0, 0.0]
+            # gangle is absolute
+            gangle = [0.0, 0.0]
 
-            # print(x)
-            # print(y)
-            # print(z)
+            buttons = xbc.get_buttons_bool()
 
-            raven.manual_move(0, x[0], y[0], z[0], 0)
-            raven.manual_move(1, x[1], y[1], z[1], 0)
+            # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
+            if buttons[4]:
+                z[0] = -xbc.get_lj_y() / div
+            else:
+                y[0] = -xbc.get_lj_x() / div
+                x[0] = -xbc.get_lj_y() / div
+            # Update coordinates for right arm
+            if buttons[5]:
+                z[1] = -xbc.get_rj_y() / div
+            else:
+                y[1] = -xbc.get_rj_x() / div
+                x[1] = -xbc.get_rj_y() / div
+            # Set gripper angles
+            gangle[0] = (1 - xbc.get_lt()) / 2
+            gangle[1] = (1 - xbc.get_rt()) / 2
 
-            # for i in range(2):
-            #
-            #     if raven.moved[i] or raven.homed:
-            #         raven.manual_move(i, x[i], y[i], z[i], 0)
-            #         raven.move_now(i)
+            # Plan simulated raven motion based off of the x,y,z changes created above
+            raven.manual_move(0, x[0], y[0], z[0], gangle[0])
+            raven.manual_move(1, x[1], y[1], z[1], gangle[1])
 
-            # # print(int(raven.loop_rate * np.max([x[0], x[1], y[0], y[1], z[0], z[1]])))
+            # Incrementally move the simulated raven to the new planned position
             for i in range(raven.man_steps):
                 if not i:
                     raven.moved[0] = raven.move(1, 1, i)
