@@ -89,6 +89,9 @@ def fwd_kinematics(arm, input_joint_pos):
     return output_transformation
 
 def fwd_kinematics_p5(arm, input_joint_pos):
+    """
+    Gets the position of joint 5 origin
+    """
     success = False
 
     dh_alpha = np.zeros(7, dtype = 'float')
@@ -113,9 +116,6 @@ def fwd_kinematics_p5(arm, input_joint_pos):
         dh_alpha[i] = RAVEN_DH_ALPHA[arm][i]
         dh_a[i] = RAVEN_DH_A[arm][i]
 
-    print(dh_alpha)
-
     output_transformation = np.matmul(np.matmul(RAVEN_T_CB, RAVEN_T_B0[arm]), fwd_trans(0, 5, dh_alpha, dh_theta, dh_a, dh_d))
-
 
     return output_transformation
