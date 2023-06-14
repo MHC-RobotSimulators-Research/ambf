@@ -50,7 +50,7 @@ def do(q, raven, csvData, xbc):
     control[3] = file mode
     control[4] = manual mode
     '''
-    c_start = 0.0
+    # c_start = 0.0
 
     while not control[2]:
         if not q.empty():
@@ -120,9 +120,9 @@ def do(q, raven, csvData, xbc):
 
         # Testing manual control from Seans dev branch
         while control[4]:
-            c_start_next = time.time()
-            print("time for control loop: ", c_start_next - c_start)
-            c_start = c_start_next
+            # c_start_next = time.time()
+            # print("time for control loop: ", c_start_next - c_start)
+            # c_start = c_start_next
 
             div = 200   # how much the raw input values will be divided by to produce the change in x,y,z
             dead_zone = 0.1
@@ -154,7 +154,8 @@ def do(q, raven, csvData, xbc):
                     x[1] = -controller[1][1] / div
             # Set gripper angles
             gangle[0] = 1 - (controller[0][2] / 4)
-            gangle[1] = 1 - (controller[1][2] / 4)
+            # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
+            gangle[1] = -1 + (controller[1][2] / 4)
 
             # print(x, "\n", y, "\n", z, "\n")
 
@@ -257,6 +258,8 @@ def main():
     file_valid, csvData = file_loader()
     # creates raven object
     raven = arav.ambf_raven()
+    # set raven man_steps
+    raven.man_steps = 20
     # creates xbox controller object
     xbc = axc.XboxController()
     # creates queue for sharing data between main thread and get_input thread
