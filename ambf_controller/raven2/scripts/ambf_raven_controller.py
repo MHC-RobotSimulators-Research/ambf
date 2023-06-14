@@ -1,4 +1,4 @@
-import multiprocessing
+import multiprocessing as mp
 import pygame
 import sys
 import os
@@ -10,6 +10,8 @@ import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
+import timeit
+
 
 '''
 author: Sean
@@ -26,16 +28,17 @@ def control_reset():
     new_control = [False, False, False, False, False]
     return new_control
 
-def do(q, raven, csvData, xbc):
+def do(q, raven, csvData, pipe):
     """
     performs the main actions of the robot based on the values
     in the control array
 
     Args:
+
         q : a multiprocessing queue
         raven : an ambf_raven object
         csvData : an array containing data from csv
-        xbc : an ambf_xbox_controller object
+        pipe : an ambf_xbox_controller object
     """
     control = [False, False, False, False, False]
     '''
@@ -114,36 +117,42 @@ def do(q, raven, csvData, xbc):
         # Testing manual control from Seans dev branch
         while control[4]:
 
-            div = 100   # how much the raw input values will be divided by to produce the change in x,y,z
+            # div = 100   # how much the raw input values will be divided by to produce the change in x,y,z
+            #
+            # # Cartesian coordinates are relative to the current position
+            # x = [0.01, 0.0]
+            # y = [0.0, 0.01]
+            # z = [0.0, 0.0]
+            # # gangle is absolute
+            # gangle = [0.0, 0.0]
 
-            # Cartesian coordinates are relative to the current position
-            x = [0.0, 0.0]
-            y = [0.0, 0.0]
-            z = [0.0, 0.0]
-            # gangle is absolute
-            gangle = [0.0, 0.0]
+            # buttons = xbc.get_buttons_bool()
+            #
+            # # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
+            # if buttons[4]:
+            #     z[0] = -xbc.get_lj_y() / div
+            # else:
+            #     y[0] = -xbc.get_lj_x() / div
+            #     x[0] = -xbc.get_lj_y() / div
+            # # Update coordinates for right arm
+            # if buttons[5]:
+            #     z[1] = -xbc.get_rj_y() / div
+            # else:
+            #     y[1] = -xbc.get_rj_x() / div
+            #     x[1] = -xbc.get_rj_y() / div
+            # # Set gripper angles
+            # gangle[0] = (1 - xbc.get_lt()) / 2
+            # gangle[1] = (1 - xbc.get_rt()) / 2
 
-            buttons = xbc.get_buttons_bool()
-
-            # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
-            if buttons[4]:
-                z[0] = -xbc.get_lj_y() / div
-            else:
-                y[0] = -xbc.get_lj_x() / div
-                x[0] = -xbc.get_lj_y() / div
-            # Update coordinates for right arm
-            if buttons[5]:
-                z[1] = -xbc.get_rj_y() / div
-            else:
-                y[1] = -xbc.get_rj_x() / div
-                x[1] = -xbc.get_rj_y() / div
-            # Set gripper angles
-            gangle[0] = (1 - xbc.get_lt()) / 2
-            gangle[1] = (1 - xbc.get_rt()) / 2
+            pos = pipe.get()
+            # print("fk ", timeit.timeit(lambda: pipe.get(), setup="pass",number=1))
 
             # Plan simulated raven motion based off of the x,y,z changes created above
-            raven.manual_move(0, x[0], y[0], z[0], gangle[0])
-            raven.manual_move(1, x[1], y[1], z[1], gangle[1])
+            # raven.manual_move(0, x[0], y[0], z[0], gangle[0])
+            # raven.manual_move(1, x[1], y[1], z[1], gangle[1])
+
+            raven.manual_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0])
+            raven.manual_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1])
 
             # Incrementally move the simulated raven to the new planned position
             for i in range(raven.man_steps):
@@ -206,6 +215,41 @@ def get_input(q, stdin, file_valid):
             q.put(control)
             userinput = input("Input key to switch control modes\n")
 
+def get_controller_input(con_q):
+
+    # creates xbox controller object
+    xbc = axc.ambf_xbox_controller()
+
+    div = 100  # how much the raw input values will be divided by to produce the change in x,y,z
+
+    # Cartesian coordinates are relative to the current position
+    x = [0.01, 0.0]
+    y = [0.0, 0.01]
+    z = [0.0, 0.0]
+    # gangle is absolute
+    gangle = [0.0, 0.0]
+
+    while True:
+        buttons = xbc.get_buttons_bool()
+
+        # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
+        if buttons[4]:
+            z[0] = -xbc.get_lj_y() / div
+        else:
+            y[0] = -xbc.get_lj_x() / div
+            x[0] = -xbc.get_lj_y() / div
+        # Update coordinates for right arm
+        if buttons[5]:
+            z[1] = -xbc.get_rj_y() / div
+        else:
+            y[1] = -xbc.get_rj_x() / div
+            x[1] = -xbc.get_rj_y() / div
+        # Set gripper angles
+        gangle[0] = (1 - xbc.get_lt()) / 2
+        gangle[1] = (1 - xbc.get_rt()) / 2
+
+        con_q.put([x, y, z, gangle])
+
 def file_loader():
     file_valid = True
     csvData= []
@@ -238,18 +282,25 @@ def main():
     file_valid, csvData = file_loader()
     # creates raven object
     raven = arav.ambf_raven()
-    # creates xbox controller object
-    xbc = axc.ambf_xbox_controller()
+    # # creates xbox controller object
+    # xbc = axc.ambf_xbox_controller()
     # creates queue for sharing data between main thread and get_input thread
-    q = multiprocessing.Queue()
+    input_q = mp.Queue()
+    con_q = mp.Queue()
     # connects standard input to thread
+    # do_conn, input_conn = mp.Pipe()
     newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
     # creates multiprocess
-    p1 = multiprocessing.Process(target = get_input, args = (q, newstdin, file_valid))
+    get_inputs = mp.Process(target=get_input, args=(input_q, newstdin, file_valid))
+    get_controller_inputs = mp.Process(target=get_controller_input, args=(con_q, ))
     # starts multiprocess
-    p1.start()
-    do(q, raven, csvData, xbc)
-    p1.join()
+    get_inputs.start()
+    get_controller_inputs.start()
+    do(input_q, raven, csvData, con_q)
+    get_inputs.join()
+    get_controller_inputs.join()
+
+
 
 
 if __name__ == '__main__':

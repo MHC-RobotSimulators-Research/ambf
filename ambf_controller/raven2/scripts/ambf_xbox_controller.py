@@ -10,7 +10,7 @@ class ambf_xbox_controller:
     """
 
     def __init__(self):
-
+        pygame.init()
         # Initialize joystick
         pygame.joystick.init()
 
@@ -21,7 +21,7 @@ class ambf_xbox_controller:
             print("No controller found")
 
         # specify controller dead zone for the sticks
-        self.deadzone = 0.08
+        self.deadzone = 0.10
 
     def get_axes(self):
         """
@@ -167,28 +167,27 @@ class ambf_xbox_controller:
         """
         return pygame.joystick.Joystick(0).get_hat(0)
 
-    def rumble(self):
-        print(pygame.joystick.Joystick(0).rumble(1, 1, 0))
+    # def rumble(self):
+    #     pygame.event.get()
+    #
+    #     print(pygame.joystick.Joystick(0).rumble(0.5, 0.5, 0))
 
 
 # Stuff for testing
-def main():
-
-    pygame.joystick.init()
-    # Initialize the pygame joystick module followed by the joystick with the id 1
-    controller = ambf_xbox_controller()
-    clock = pygame.time.Clock()
-
-    print("num hats ", pygame.joystick.Joystick(0).get_numhats())
-    print("num buttons ", pygame.joystick.Joystick(0).get_numbuttons())
-    print("num buttons ", pygame.joystick.Joystick(0).get_hat(0))
-
-
-    running = True
-
-    while running:
-        if controller.get_buttons_bool()[0]:
-            controller.rumble()
-
-if __name__ == "__main__":
-    main()
+# def main():
+#
+#     pygame.joystick.init()
+#     # Initialize the pygame joystick module followed by the joystick with the id 1
+#     controller = ambf_xbox_controller()
+#     clock = pygame.time.Clock()
+#
+#     running = True
+#
+#     while running:
+#         pygame.event.get()
+#         # if controller.get_buttons_bool()[0]:
+#         controller.rumble()
+#         print("trigger ", controller.get_lt())
+#
+# if __name__ == "__main__":
+#     main()
