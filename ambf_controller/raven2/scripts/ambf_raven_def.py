@@ -18,6 +18,9 @@ Eps          = sys.float_info.epsilon
 MAX_JOINTS         = np.array([  m.pi,         m.pi,  0.10,            m.pi,   2, (m.pi * 3)/4, (m.pi * 3)/4],  dtype = 'float')
 MIN_JOINTS         = np.array([ -m.pi,        -m.pi, -0.17,           -m.pi,  -2,            0,            0],  dtype = 'float')
 HOME_JOINTS        = np.array([m.pi/3, (m.pi * 3)/5, -0.03,    (m.pi * 3)/4,   0,       m.pi/6,       m.pi/6],  dtype = 'float')
+HOME_DH            = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
+                                [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
+                                dtype="float")
 DANCE_SCALE_JOINTS = np.array([   0.3,          0.3,  0.06,             0.3, 1.2,       m.pi/6,       m.pi/6],  dtype = 'float')
 
 RAVEN_JOINT_LIMITS = np.array([[    0.0,          m.pi/4,           -0.17, -m.pi*2, -2, -2, -2],
