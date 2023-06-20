@@ -166,13 +166,14 @@ def inv_kinematics(arm, input_cp, input_gangle):
     return dhvalue_to_joint(iksol[best_idx], input_gangle, arm)
 
 
-def inv_kinematics_p5(arm, input_cp, input_gangle):
+def inv_kinematics_p5(arm, input_cp, input_gangle, home_dh):
     """
     Calculates joint positions for joints 1, 2, and 3 using p5, then assigns joints 4,5, and 6 to their home values
     Args:
         arm (int) : which arm to perform ik for
         input_cp (array) : dh transformation for p5
         input_gangle (float) : specifies the angle of the gripper
+        home_dh (array) : DH values for the home position of raven2, or the desired DH values for joints 4, 5, and 6
     Returns:
         An array containing the calculated joint positions
     """
@@ -260,8 +261,8 @@ def inv_kinematics_p5(arm, input_cp, input_gangle):
         scth1[:3] = np.matmul(np.linalg.inv(Bmx), xyp05[:3]) * (1 / d)
         iksol[i][0] = m.atan2(scth1[1], scth1[0])
 
-    home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., 0., 0.52359878],
-                       [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., -0., 0.52359878]], dtype="float")
+    # home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., 0., 0.52359878],
+    #                    [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi/2, 0., -0., 0.52359878]], dtype="float")
 
     # Assign theta 4,5, and 6 to their desired values for all iksol
     for i in range(numsols):
