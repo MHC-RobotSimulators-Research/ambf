@@ -1,16 +1,14 @@
 import multiprocessing as mp
-import pygame
 import sys
 import os
 import time
 from ambf_client import Client
-import math
+import math as m
 import numpy as np
 import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
-import ambf_xbox_controller_test as axc
-import time
+import ambf_xbox_controller as axc
 
 
 '''
@@ -38,9 +36,9 @@ def do(q, raven, csvData, xbc):
     Args:
 
         q : a multiprocessing queue
-        raven : an ambf_raven object
+        raven : an ambf_raven instance
         csvData : an array containing data from csv
-        pipe : an ambf_xbox_controller object
+        xbc : an ambf_xbox_controller instance
     """
     control = [False, False, False, False, False]
     '''
@@ -50,7 +48,8 @@ def do(q, raven, csvData, xbc):
     control[3] = file mode
     control[4] = manual mode
     '''
-    # c_start = 0.0
+    # Sets which mode will be used in manual control
+    arm_control = [True, True]
 
     while not control[2]:
         if not q.empty():
@@ -118,11 +117,28 @@ def do(q, raven, csvData, xbc):
             if not q.empty():
                 control = q.get()
 
-        # Testing manual control from Seans dev branch
         while control[4]:
-            # c_start_next = time.time()
-            # print("time for control loop: ", c_start_next - c_start)
-            # c_start = c_start_next
+            '''
+            Manual control mode for the simulated raven2 using an xbox controller. There are two
+            modes. The first enables simultaneous control of both arms on the xyz axes, but locks
+            joints 4, 5, and 6 to their home positions. Accessed by simultaneously pressing back 
+            and start buttons.
+            
+            Left stick: left arm x and y
+            Left trigger: left arm gripper open close
+            Left button: when pressed left stick up and down controls left arm z
+            Right stick: right arm x and y
+            Right trigger: right arm gripper open close
+            Right button: when pressed right stick up and down controls right arm z
+            
+            The second control mode only controls one arm at a time, but adds control of joints 4 and 5.
+            Accessed by pressing back for the left arm and start for the right arm.
+            
+            Left stick: selected arm x and y
+            Left trigger: selected arm gripper open close
+            Left button: when pressed left stick up and down controls selected arm z
+            Right stick: controls grippers angle and rotation
+            '''
 
             div = 200   # how much the raw input values will be divided by to produce the change in x,y,z
             dead_zone = 0.1
@@ -134,33 +150,88 @@ def do(q, raven, csvData, xbc):
             # gangle is absolute
             gangle = [0.0, 0.0]
 
+            # DH values for home position of each arm
+            home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
+                                [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
+                               dtype="float")
+
             controller = xbc.read()
 
-            # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
-            if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
-                z[0] = -controller[0][1] / div
-            else:
-                if dead_zone < abs(controller[0][0]):
-                    y[0] = -controller[0][0] / div
-                if dead_zone < abs(controller[0][1]):
-                    x[0] = -controller[0][1] / div
-            # Update coordinates for right arm
-            if controller[1][3] == 1 and dead_zone < abs(controller[1][1]):
-                z[1] = -controller[1][1] / div
-            else:
-                if dead_zone < abs(controller[1][0]):
-                    y[1] = -controller[1][0] / div
-                if dead_zone < abs(controller[1][1]):
-                    x[1] = -controller[1][1] / div
-            # Set gripper angles
-            gangle[0] = 1 - (controller[0][2] / 4)
-            # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
-            gangle[1] = -1 + (controller[1][2] / 4)
+            # Set which control mode to use
+            if controller[2][4] and controller[2][5]:
+                arm_control[0] = True
+                arm_control[1] = True
+            elif controller[2][4]:
+                arm_control[0] = True
+                arm_control[1] = False
+            elif controller[2][5]:
+                arm_control[0] = False
+                arm_control[1] = True
 
-            # print(x, "\n", y, "\n", z, "\n")
+            # Coarse control of both raven arms
+            if arm_control[0] and arm_control[1]:
+                # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
+                if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
+                    z[0] = -controller[0][1] / div
+                else:
+                    if dead_zone < abs(controller[0][0]):
+                        y[0] = -controller[0][0] / div
+                    if dead_zone < abs(controller[0][1]):
+                        x[0] = -controller[0][1] / div
+                # Update coordinates for right arm
+                if controller[1][3] == 1 and dead_zone < abs(controller[1][1]):
+                    z[1] = -controller[1][1] / div
+                else:
+                    if dead_zone < abs(controller[1][0]):
+                        y[1] = -controller[1][0] / div
+                    if dead_zone < abs(controller[1][1]):
+                        x[1] = -controller[1][1] / div
+                # Set gripper angles
+                gangle[0] = 1 - (controller[0][2] / 4)
+                # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
+                gangle[1] = -1 + (controller[1][2] / 4)
 
-            raven.manual_move(0, x[0], y[0], z[0], gangle[0])
-            raven.manual_move(1, x[1], y[1], z[1], gangle[1])
+                # Plan next move based off of modifies cartesian coordinates
+                raven.manual_move(0, x[0], y[0], z[0], gangle[0], True)
+                raven.manual_move(1, x[1], y[1], z[1], gangle[1], True)
+
+            # Fine control of one arm
+            elif arm_control[0] or arm_control[1]:
+                # Decide which arm to control
+                arm = 0
+                if arm_control[1]:
+                    arm = 1
+
+                # Cartesian control of desired arm
+                if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
+                    z[arm] = -controller[0][1] / div
+                else:
+                    if dead_zone < abs(controller[0][0]):
+                        y[arm] = -controller[0][0] / div
+                    if dead_zone < abs(controller[0][1]):
+                        x[arm] = -controller[0][1] / div
+
+                # Set gripper angle
+                if arm_control[0]:
+                    gangle[0] = 1 - (controller[0][2] / 4)
+                else:
+                    gangle[1] = -1 + (controller[1][2] / 4)
+
+                # Control gripper position using home_dh values
+                if dead_zone < abs(controller[1][0]) or dead_zone < abs(controller[1][1]):
+                    # Position j5
+                    j5 = m.sqrt(controller[1][0] ** 2 + controller[1][1] ** 2)
+                    if controller[1][0] < 0:
+                        home_dh[arm][4] = j5
+                    else:
+                        home_dh[arm][4] = -j5
+                    # Position j4
+                    j4 = m.atan(controller[1][1] / controller[1][0])
+                    home_dh[arm][3] = j4
+
+                # Plan new position based off of desired cartesian changes
+                raven.manual_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
+                raven.manual_move(1, x[1], y[1], z[1], gangle[1], True, home_dh)
 
             # Incrementally move the simulated raven to the new planned position
             for i in range(raven.man_steps):
@@ -173,6 +244,15 @@ def do(q, raven, csvData, xbc):
                 time.sleep(0.01)
             if raven.moved[0] and raven.moved[1]:
                 print("Raven has moved!")
+
+            # rumble the controller when raven is limited
+            rumble = [0.0, 0.0]
+            for i in range(2):
+                if raven.limited[i]:
+                    rumble[i] = 1
+            if rumble[0] != 0.0 or rumble[1] != 0.0:
+                xbc.rumble(rumble[0], rumble[1], 100)
+
             if not q.empty():
                 control = q.get()
 
@@ -182,10 +262,10 @@ def do(q, raven, csvData, xbc):
 
 
 def get_input(q, stdin, file_valid):
-    '''
+    """
     continuously loops to collect new inputs from user in order to switch
     control modes
-    '''
+    """
     control = [False, False, False, False, False]
     sys.stdin = stdin #this is to access standard input in the thread
     print("Input Menu:\n")
