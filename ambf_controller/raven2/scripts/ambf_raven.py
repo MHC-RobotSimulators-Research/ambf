@@ -193,7 +193,7 @@ class ambf_raven:
             elif i == 15:
                 self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) - math.pi / 12) / scale)
 
-    def manual_move(self, arm, x, y, z, gangle):
+    def manual_move(self, arm, x, y, z, gangle, p5=False, home_dh=ard.HOME_DH):
         """
         moves the desired robot arm based on inputted changes to cartesian coordinates
         Args:
@@ -202,13 +202,22 @@ class ambf_raven:
             y (float) : the desired change to the y coordinate
             z (float) : the desired change to the z coordinate
             gangle (float) : the gripper angle, 0 is closed
+            p5 (bool) : when false uses standard kinematics, when true uses p5 kinematics
+            home_dh (array) : array containing home position, or desired postion of the
+                joints not set by cartesian coordinates in inv_kinematics_p5
         """
         curr_jp = np.array(self.arms[arm].get_all_joint_pos(), dtype="float")
-        curr_tm = fk.fwd_kinematics_p5(arm, curr_jp)
+        if p5:
+            curr_tm = fk.fwd_kinematics_p5(arm, curr_jp)
+        else:
+            curr_tm = fk.fwd_kinematics(arm, curr_jp)
         curr_tm[0, 3] += x
         curr_tm[1, 3] += y
         curr_tm[2, 3] += z
-        jpl = ik.inv_kinematics_p5(arm, curr_tm, gangle)
+        if p5:
+            jpl = ik.inv_kinematics_p5(arm, curr_tm, gangle, home_dh)
+        else:
+            jpl = ik.inv_kinematics(arm, curr_tm, gangle)
         self.limited[arm] = jpl[1]
         if self.limited[arm]:
             print("Desired cartesian position is out of bounds for Raven2. Will move to max pos.")
