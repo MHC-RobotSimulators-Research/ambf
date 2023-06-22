@@ -50,6 +50,7 @@ def do(q, raven, csvData, xbc):
     '''
     # Sets which mode will be used in manual control
     arm_control = [True, True]
+    last_j4 = 0.0 # used for smooth rotation of joint 4
 
     while not control[2]:
         if not q.empty():
@@ -225,16 +226,26 @@ def do(q, raven, csvData, xbc):
                         home_dh[arm][4] = j5
                     else:
                         home_dh[arm][4] = -j5
-                    # Position j4, exception to handle x = 0
+                    # Find lj position
                     try:
-                        j4 = m.atan(controller[1][1] / controller[1][0])
+                        lj_pos = m.atan(controller[1][1] / controller[1][0])
+                    # exception to handle x = 0
                     except ZeroDivisionError:
-                        j4 = m.pi / 2
+                        if last_j4 < 0:
+                            lj_pos = -m.pi / 2
+                        else:
+                            lj_pos = m.pi / 2
+                    # calculate new j4 position
+                    j4 = lj_pos
+                    # Set j4 depending on which arm is being controlled
                     if arm_control[0]:
                         home_dh[arm][3] = -j4
                     else:
                         home_dh[arm][3] = j4
 
+                # Reset last_j4 when there is no input
+                else:
+                    last_j4 = 0.0
 
                 # Plan new position based off of desired cartesian changes
                 raven.manual_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
