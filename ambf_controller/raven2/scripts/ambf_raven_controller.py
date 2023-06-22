@@ -213,7 +213,7 @@ def do(q, raven, csvData, xbc):
 
                 # Set gripper angle
                 if arm_control[0]:
-                    gangle[0] = 1 - (controller[0][2] / 4)
+                    gangle[0] = 1 - (controller[1][2] / 4)
                 else:
                     gangle[1] = -1 + (controller[1][2] / 4)
 
@@ -225,9 +225,16 @@ def do(q, raven, csvData, xbc):
                         home_dh[arm][4] = j5
                     else:
                         home_dh[arm][4] = -j5
-                    # Position j4
-                    j4 = m.atan(controller[1][1] / controller[1][0])
-                    home_dh[arm][3] = j4
+                    # Position j4, exception to handle x = 0
+                    try:
+                        j4 = m.atan(controller[1][1] / controller[1][0])
+                    except ZeroDivisionError:
+                        j4 = m.pi / 2
+                    if arm_control[0]:
+                        home_dh[arm][3] = -j4
+                    else:
+                        home_dh[arm][3] = j4
+
 
                 # Plan new position based off of desired cartesian changes
                 raven.manual_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
