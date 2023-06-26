@@ -193,7 +193,7 @@ class ambf_raven:
             elif i == 15:
                 self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) - math.pi / 12) / scale)
 
-    def manual_move(self, arm, x, y, z, gangle, p5=False, home_dh=ard.HOME_DH):
+    def plan_move(self, arm, x, y, z, gangle, p5=False, home_dh=ard.HOME_DH):
         """
         moves the desired robot arm based on inputted changes to cartesian coordinates
         Args:

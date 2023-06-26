@@ -193,8 +193,8 @@ def do(q, raven, csvData, xbc):
                 gangle[1] = -1 + (controller[1][2] / 4)
 
                 # Plan next move based off of modifies cartesian coordinates
-                raven.manual_move(0, x[0], y[0], z[0], gangle[0], True)
-                raven.manual_move(1, x[1], y[1], z[1], gangle[1], True)
+                raven.plan_move(0, x[0], y[0], z[0], gangle[0], True)
+                raven.plan_move(1, x[1], y[1], z[1], gangle[1], True)
 
             # Fine control of one arm
             elif arm_control[0] or arm_control[1]:
@@ -248,8 +248,8 @@ def do(q, raven, csvData, xbc):
                     last_j4 = 0.0
 
                 # Plan new position based off of desired cartesian changes
-                raven.manual_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
-                raven.manual_move(1, x[1], y[1], z[1], gangle[1], True, home_dh)
+                raven.plan_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
+                raven.plan_move(1, x[1], y[1], z[1], gangle[1], True, home_dh)
 
             # Incrementally move the simulated raven to the new planned position
             for i in range(raven.man_steps):
