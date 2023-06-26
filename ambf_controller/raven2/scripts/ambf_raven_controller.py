@@ -52,8 +52,6 @@ def do(q, raven, csvData, xbc):
     arm_control = [True, True]
     # True for p5 ik and false for standard ik
     ik_mode = True
-    last_j4 = 0.0 # used for smooth rotation of joint 4
-
     # DH values for home position of each arm
     home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
                         [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
@@ -62,11 +60,11 @@ def do(q, raven, csvData, xbc):
     while not control[2]:
         if not q.empty():
             control = q.get()
-        while control[0]and not any(raven.homed): #if after homing, code breaks, needs assistance
+        while control[0]and not any(raven.homed): # if after homing, code breaks, needs assistance
             for i in range(raven.loop_rate):
                 if not i:
                     print("starting homing")
-                    #moves raven incrementally towards home position, if home position is reached, returns True
+                    # moves raven incrementally towards home position, if home position is reached, returns True
                     raven.homed[0] = raven.go_home(1, 1, i)
                     raven.homed[1] = raven.go_home(1, 0, i)
                 else:
@@ -75,13 +73,13 @@ def do(q, raven, csvData, xbc):
                 time.sleep(0.01)
             if raven.homed[0] and raven.homed[1]:
                 print("Raven is homed!")
-            #checks the queue afterwards to see if user provided new input
+            # checks the queue afterwards to see if user provided new input
             if not q.empty():
                 control = q.get()
         while control[1]:
             if raven.i == 0:
                 start = time.time()
-                #similar to homing, moves raven incrementally in a sine pattern
+                # similar to homing, moves raven incrementally in a sine pattern
                 raven.sine_dance(1, 1, raven.i, raven.rampup_count)
                 raven.sine_dance(1, 0, raven.i, raven.rampup_count)
             else:
@@ -148,22 +146,20 @@ def do(q, raven, csvData, xbc):
             Left trigger: selected arm gripper open close
             Left button: when pressed left stick up and down controls selected arm z
             Right stick: controls grippers angle and rotation
+            X button: revert left arm gripper to its home position
+            Y button: revert right arm gripper to its home position
             '''
 
             div = 200   # how much the raw input values will be divided by to produce the change in x,y,z
-            dead_zone = 0.1
+            dead_zone = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
 
             # Cartesian coordinates are relative to the current position
             x = [0.0, 0.0]
             y = [0.0, 0.0]
             z = [0.0, 0.0]
+
             # gangle is absolute
             gangle = [0.0, 0.0]
-
-            # DH values for home position of each arm
-            home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
-                                [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
-                               dtype="float")
 
             controller = xbc.read()
 
@@ -185,9 +181,16 @@ def do(q, raven, csvData, xbc):
             if controller[2][0]:
                 ik_mode = True
                 print("Using p5 inverse kinematics")
-            if controller[2][1]:
+            elif controller[2][1]:
                 ik_mode = False
                 print("Using standard inverse kinematics")
+
+            # Home left gripper
+            if controller[2][2]:
+                home_dh[0] = ard.HOME_DH[0]
+            # Home right gripper
+            if controller[2][3]:
+                home_dh[1] = ard.HOME_DH[1]
 
             # Coarse control of both raven arms
             if arm_control[0] and arm_control[1]:
@@ -232,40 +235,37 @@ def do(q, raven, csvData, xbc):
                     if dead_zone < abs(controller[0][1]):
                         x[arm] = -controller[0][1] / div
 
-                # Set gripper angle
+                # Left arm
                 if arm_control[0]:
+                    # Set left gripper angle
                     gangle[0] = 1 - (controller[1][2] / 4)
+
+                    # Set right j4
+                    if dead_zone < abs(controller[1][0]):
+                        if abs(home_dh[0][3] - controller[1][0] / 10) < m.pi:
+                            home_dh[0][3] += -controller[1][0] / 10
+                        print("j3 dh ", home_dh[0][3])
+                    # Position j5
+                    if dead_zone < abs(controller[1][1]):
+                        if abs(home_dh[0][4] - controller[1][1] / 10) < 2:
+                            home_dh[0][4] += -controller[1][1] / 10
+                        print(home_dh[0][4])
+
+                # Right arm
                 else:
+                    # Set right gripper angle
                     gangle[1] = -1 + (controller[1][2] / 4)
 
-                # Control gripper position using home_dh values
-                if dead_zone < abs(controller[1][0]) or dead_zone < abs(controller[1][1]):
+                    # Set right j4
+                    if dead_zone < abs(controller[1][0]):
+                        if abs(home_dh[1][3] + controller[1][0] / 10) < m.pi:
+                            home_dh[1][3] += controller[1][0] / 10
+                        print(home_dh[1][3])
                     # Position j5
-                    j5 = m.sqrt(controller[1][0] ** 2 + controller[1][1] ** 2)
-                    if controller[1][0] < 0:
-                        home_dh[arm][4] = j5
-                    else:
-                        home_dh[arm][4] = -j5
-                    # Find lj position
-                    try:
-                        lj_pos = m.atan(controller[1][1] / controller[1][0])
-                    # exception to handle x = 0
-                    except ZeroDivisionError:
-                        if last_j4 < 0:
-                            lj_pos = -m.pi / 2
-                        else:
-                            lj_pos = m.pi / 2
-                    # calculate new j4 position
-                    j4 = lj_pos
-                    # Set j4 depending on which arm is being controlled
-                    if arm_control[0]:
-                        home_dh[arm][3] = -j4
-                    else:
-                        home_dh[arm][3] = j4
-
-                # Reset last_j4 when there is no input
-                else:
-                    last_j4 = 0.0
+                    if dead_zone < abs(controller[1][1]):
+                        if abs(home_dh[1][4] + controller[1][1] / 10) < 2:
+                            home_dh[1][4] += controller[1][1] / 10
+                        print(home_dh[1][4])
 
                 # Plan new position based off of desired cartesian changes
                 raven.plan_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
@@ -377,7 +377,7 @@ def main():
     # creates raven object
     raven = arav.ambf_raven()
     # set raven man_steps
-    raven.man_steps = 20
+    raven.man_steps = 17
     # creates xbox controller object
     xbc = axc.XboxController()
     # creates queue for sharing data between main thread and get_input thread
