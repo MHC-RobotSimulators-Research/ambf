@@ -50,7 +50,14 @@ def do(q, raven, csvData, xbc):
     '''
     # Sets which mode will be used in manual control
     arm_control = [True, True]
+    # True for p5 ik and false for standard ik
+    ik_mode = True
     last_j4 = 0.0 # used for smooth rotation of joint 4
+
+    # DH values for home position of each arm
+    home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
+                        [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
+                       dtype="float")
 
     while not control[2]:
         if not q.empty():
@@ -131,6 +138,8 @@ def do(q, raven, csvData, xbc):
             Right stick: right arm x and y
             Right trigger: right arm gripper open close
             Right button: when pressed right stick up and down controls right arm z
+            A button: use p5 inverse kinematics
+            B button: use standard inverse kinematics
             
             The second control mode only controls one arm at a time, but adds control of joints 4 and 5.
             Accessed by pressing back for the left arm and start for the right arm.
@@ -162,12 +171,23 @@ def do(q, raven, csvData, xbc):
             if controller[2][4] and controller[2][5]:
                 arm_control[0] = True
                 arm_control[1] = True
+                print("Controlling both arms")
             elif controller[2][4]:
                 arm_control[0] = True
                 arm_control[1] = False
+                print("Controlling the left arm")
             elif controller[2][5]:
                 arm_control[0] = False
                 arm_control[1] = True
+                print("Controlling the righ arm")
+
+            # Set kinematics mode
+            if controller[2][0]:
+                ik_mode = True
+                print("Using p5 inverse kinematics")
+            if controller[2][1]:
+                ik_mode = False
+                print("Using standard inverse kinematics")
 
             # Coarse control of both raven arms
             if arm_control[0] and arm_control[1]:
@@ -193,8 +213,8 @@ def do(q, raven, csvData, xbc):
                 gangle[1] = -1 + (controller[1][2] / 4)
 
                 # Plan next move based off of modifies cartesian coordinates
-                raven.plan_move(0, x[0], y[0], z[0], gangle[0], True)
-                raven.plan_move(1, x[1], y[1], z[1], gangle[1], True)
+                raven.plan_move(0, x[0], y[0], z[0], gangle[0], ik_mode, home_dh)
+                raven.plan_move(1, x[1], y[1], z[1], gangle[1], ik_mode, home_dh)
 
             # Fine control of one arm
             elif arm_control[0] or arm_control[1]:
@@ -260,8 +280,8 @@ def do(q, raven, csvData, xbc):
                     raven.moved[0] = raven.move(0, 1, i)
                     raven.moved[1] = raven.move(0, 0, i)
                 time.sleep(0.01)
-            if raven.moved[0] and raven.moved[1]:
-                print("Raven has moved!")
+            # if raven.moved[0] and raven.moved[1]:
+            #     print("Raven has moved!")
 
             # rumble the controller when raven is limited
             rumble = [0.0, 0.0]
