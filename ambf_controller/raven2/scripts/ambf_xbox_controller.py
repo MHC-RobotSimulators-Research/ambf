@@ -86,9 +86,9 @@ class XboxController(object):
                 elif event.code == 'BTN_SOUTH':
                     self.A = event.state
                 elif event.code == 'BTN_NORTH':
-                    self.Y = event.state #previously switched with X
+                    self.X = event.state  # previously switched with X
                 elif event.code == 'BTN_WEST':
-                    self.X = event.state #previously switched with Y
+                    self.Y = event.state  # previously switched with Y
                 elif event.code == 'BTN_EAST':
                     self.B = event.state
                 elif event.code == 'BTN_THUMBL':
