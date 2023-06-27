@@ -244,12 +244,10 @@ def do(q, raven, csvData, xbc):
                     if dead_zone < abs(controller[1][0]):
                         if abs(home_dh[0][3] - controller[1][0] / 10) < m.pi:
                             home_dh[0][3] += -controller[1][0] / 10
-                        print("j3 dh ", home_dh[0][3])
                     # Position j5
                     if dead_zone < abs(controller[1][1]):
                         if abs(home_dh[0][4] - controller[1][1] / 10) < 2:
                             home_dh[0][4] += -controller[1][1] / 10
-                        print(home_dh[0][4])
 
                 # Right arm
                 else:
@@ -260,12 +258,10 @@ def do(q, raven, csvData, xbc):
                     if dead_zone < abs(controller[1][0]):
                         if abs(home_dh[1][3] + controller[1][0] / 10) < m.pi:
                             home_dh[1][3] += controller[1][0] / 10
-                        print(home_dh[1][3])
                     # Position j5
                     if dead_zone < abs(controller[1][1]):
                         if abs(home_dh[1][4] + controller[1][1] / 10) < 2:
                             home_dh[1][4] += controller[1][1] / 10
-                        print(home_dh[1][4])
 
                 # Plan new position based off of desired cartesian changes
                 raven.plan_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
@@ -280,8 +276,6 @@ def do(q, raven, csvData, xbc):
                     raven.moved[0] = raven.move(0, 1, i)
                     raven.moved[1] = raven.move(0, 0, i)
                 time.sleep(0.01)
-            # if raven.moved[0] and raven.moved[1]:
-            #     print("Raven has moved!")
 
             # rumble the controller when raven is limited
             rumble = [0.0, 0.0]
