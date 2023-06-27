@@ -227,7 +227,6 @@ class ambf_raven:
         # print("fk ", timeit.timeit(lambda: fk.fwd_kinematics_p5(arm, curr_jp), setup="pass",number=1))
         # print("ik ", timeit.timeit(lambda: ik.inv_kinematics_p5(arm, curr_tm, gangle), setup="pass", number=1))
 
-
     def move(self, first_entry, arm, count):
         '''
         uses the helper function manual move to slowly increment the robot's position until
