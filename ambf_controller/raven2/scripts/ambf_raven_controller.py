@@ -122,8 +122,11 @@ def do(q, raven, csvData, xbc):
                     #time.sleep(0.01)
             if not q.empty():
                 control = q.get()
-
-        while control[4]:
+        if control[4] and xbc is None:
+            print("No xbox controller detected\n"
+                  "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
+            control[4] = False
+        while control[4] and xbc is not None:
             '''
             Manual control mode for the simulated raven2 using an xbox controller. There are two
             modes. The first enables simultaneous control of both arms on the xyz axes, but locks
@@ -372,8 +375,13 @@ def main():
     raven = arav.ambf_raven()
     # set raven man_steps
     raven.man_steps = 17
-    # creates xbox controller object
-    xbc = axc.XboxController()
+    # creates xbox controller object if there is a controller connected
+    try:
+        xbc = axc.XboxController()
+    except IndexError:
+        xbc = None
+        print("No xbox controller detected\n"
+              "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
     # creates queue for sharing data between main thread and get_input thread
     input_q = mp.Queue()
     # connects standard input to thread
