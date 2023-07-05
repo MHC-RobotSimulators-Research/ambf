@@ -89,6 +89,7 @@ def do(q, raven, csvData, xbc):
                     control = q.get()
             raven.i += 1
             time.sleep(0.01)
+
         while control[3] and not raven.finished:
             '''
             moves raven along a trajectory defined by a .csv function with 7 columns for each
@@ -122,10 +123,12 @@ def do(q, raven, csvData, xbc):
                     #time.sleep(0.01)
             if not q.empty():
                 control = q.get()
+
         if control[4] and xbc is None:
             print("No xbox controller detected\n"
                   "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
             control[4] = False
+
         while control[4] and xbc is not None:
             '''
             Manual control mode for the simulated raven2 using an xbox controller. There are two
@@ -365,10 +368,10 @@ def file_loader():
 
 
 def main():
-    '''
+    """
     runs the controller by initializing a thread to collect user inputs and
     calling the do() method to move the robot according to what the user inputs
-    '''
+    """
     # load external raven trajectory file
     file_valid, csvData = file_loader()
     # creates raven object
