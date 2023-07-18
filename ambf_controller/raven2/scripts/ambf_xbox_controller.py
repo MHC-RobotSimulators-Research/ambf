@@ -1,3 +1,5 @@
+import time
+
 import inputs
 from inputs import get_gamepad
 from inputs import devices
@@ -111,7 +113,8 @@ class XboxController(object):
 
 if __name__ == '__main__':
     joy = XboxController()
-    joy.rumble(1, 1, 100)
+    # joy.rumble(1, 1, 100)
 
     while True:
         print(joy.read())
+        time.sleep(1)

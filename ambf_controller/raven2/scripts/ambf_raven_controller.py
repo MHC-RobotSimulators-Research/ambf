@@ -12,9 +12,10 @@ import ambf_xbox_controller as axc
 
 
 '''
-author: Sean
+authors: Natalie Chalfant, Sean Fabrega
 ambf_raven_controller is a Client for operating the ambf_raven simulated robot, specifically designed for
-using sine_dance and recording data to be used create ml file
+using manual move mode to control the simulated raven II using an xbox controller and interact with the
+simulated environment
 '''
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
@@ -181,7 +182,7 @@ def do(q, raven, csvData, xbc):
             elif controller[2][5]:
                 arm_control[0] = False
                 arm_control[1] = True
-                print("Controlling the righ arm")
+                print("Controlling the right arm")
 
             # Set kinematics mode
             if controller[2][0]:

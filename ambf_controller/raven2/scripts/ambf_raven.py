@@ -223,6 +223,8 @@ class ambf_raven:
             print("Desired cartesian position is out of bounds for Raven2. Will move to max pos.")
         new_jp = jpl[0]
         self.next_jp[arm] = new_jp
+        for i in range(len(new_jp)):
+            print("diff: ", new_jp[i]-curr_jp[i])
 
         # print("fk ", timeit.timeit(lambda: fk.fwd_kinematics_p5(arm, curr_jp), setup="pass",number=1))
         # print("ik ", timeit.timeit(lambda: ik.inv_kinematics_p5(arm, curr_tm, gangle), setup="pass", number=1))
