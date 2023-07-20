@@ -1,4 +1,4 @@
-import multiprocessing as mp
+import threading as th
 import sys
 import os
 import time
@@ -9,6 +9,7 @@ import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
+import ambf_raven_recorder as arc
 
 
 '''
@@ -20,6 +21,9 @@ simulated environment
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 
+CONTROL = [False, False, False, False, False]
+RECORD = False
+
 
 def control_reset():
     """
@@ -29,7 +33,7 @@ def control_reset():
     return new_control
 
 
-def do(q, raven, csvData, xbc):
+def do(raven, csvData, xbc):
     """
     performs the main actions of the robot based on the values
     in the control array
@@ -40,7 +44,7 @@ def do(q, raven, csvData, xbc):
         csvData : an array containing data from csv
         xbc : an ambf_xbox_controller instance
     """
-    control = [False, False, False, False, False]
+    global CONTROL
     '''
     control[0] = homing
     control[1] = sine dance
@@ -57,10 +61,9 @@ def do(q, raven, csvData, xbc):
                         [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                        dtype="float")
 
-    while not control[2]:
-        if not q.empty():
-            control = q.get()
-        while control[0] and not any(raven.homed): # if after homing, code breaks, needs assistance
+    while not CONTROL[2]:
+
+        while CONTROL[0] and not any(raven.homed):  # if after homing, code breaks, needs assistance
             '''
             Homing Mode:
             '''
@@ -76,10 +79,8 @@ def do(q, raven, csvData, xbc):
                 time.sleep(0.01)
             if raven.homed[0] and raven.homed[1]:
                 print("Raven is homed!")
-            # checks the queue afterwards to see if user provided new input
-            if not q.empty():
-                control = q.get()
-        while control[1]:
+
+        while CONTROL[1]:
             '''
             Sine Dance:
             '''
@@ -91,12 +92,11 @@ def do(q, raven, csvData, xbc):
             else:
                 raven.sine_dance(0, 1, raven.i, raven.rampup_count)
                 raven.sine_dance(0, 0, raven.i, raven.rampup_count)
-                if not q.empty():
-                    control = q.get()
+
             raven.i += 1
             time.sleep(0.01)
 
-        while control[3] and not raven.finished:
+        while CONTROL[3] and not raven.finished:
             '''
             File Mode:
             moves raven along a trajectory defined by a .csv function with 7 columns for each
@@ -109,7 +109,7 @@ def do(q, raven, csvData, xbc):
                     writer.writerow(line)
                     start = time.time()
 
-                    while not raven.finished or not q.empty():
+                    while not raven.finished:
                         curr_time = time.time() - start
                         if int(curr_time * 1000) >= csvData.shape[0]:
                             raven.finished = True
@@ -120,7 +120,7 @@ def do(q, raven, csvData, xbc):
                         writer.writerow(line)
             else:
                 start = time.time()
-                while not raven.finished or not q.empty():
+                while not raven.finished:
                     curr_time = time.time() - start
                     if int(curr_time * 50) >= csvData.shape[0]:
                         raven.finished = True
@@ -128,15 +128,13 @@ def do(q, raven, csvData, xbc):
                         break
                     raven.set_raven_pos(csvData[int(curr_time * 50)])
                     #time.sleep(0.01)
-            if not q.empty():
-                control = q.get()
 
-        if control[4] and xbc is None:
+        if CONTROL[4] and xbc is None:
             print("No xbox controller detected\n"
                   "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
-            control[4] = False
+            CONTROL[4] = False
 
-        while control[4] and xbc is not None:
+        while CONTROL[4] and xbc is not None:
             '''
             Manual Mode:
             Manual control mode for the simulated raven2 using an xbox controller. There are two
@@ -299,21 +297,18 @@ def do(q, raven, csvData, xbc):
             if rumble[0] != 0.0 or rumble[1] != 0.0:
                 xbc.rumble(rumble[0], rumble[1], 100)
 
-            if not q.empty():
-                control = q.get()
-
     print("shutting down...\n")
     os.system('kill %d' % os.getpid())
     exit(0)
 
 
-def get_input(q, stdin, file_valid):
+def get_input(file_valid):
     """
     continuously loops to collect new inputs from user in order to switch
     control modes
     """
-    control = [False, False, False, False, False]
-    sys.stdin = stdin #this is to access standard input in the thread
+    global CONTROL
+    global RECORD
     print("Input Menu:\n")
     print("input 'h' for home\n")
     print("input 's' for sine dance\n")
@@ -323,31 +318,30 @@ def get_input(q, stdin, file_valid):
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = input()
-    while not control[2]:
+    while not CONTROL[2]:
         print("Switching control modes...\n")
-        control = control_reset()
         if userinput == 'h':
+            CONTROL = control_reset()
             print("homing...")
-            control[0] = True
-            q.put(control)
+            CONTROL[0] = True
             userinput = input("Input key to switch control modes\n")
             continue
         elif userinput == 's':
+            CONTROL = control_reset()
             print("doing sine dance...")
-            control[1] = True
-            q.put(control)
+            CONTROL[1] = True
             userinput = input("Input key to switch control modes\n")
             continue
         elif userinput == 'q':
-            control[2] = True
-            q.put(control)
+            CONTROL = control_reset()
+            CONTROL[2] = True
         elif userinput == 'f' and file_valid:
-            control[3] = True
-            q.put(control)
+            CONTROL = control_reset()
+            CONTROL[3] = True
             userinput = input("Input key to switch control modes\n")
         elif userinput == 'm':
-            control[4] = True
-            q.put(control)
+            CONTROL = control_reset()
+            CONTROL[4] = True
             userinput = input("Input key to switch control modes\n")
 
 
@@ -393,15 +387,11 @@ def main():
         xbc = None
         print("No xbox controller detected\n"
               "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
-    # creates queue for sharing data between main thread and get_input thread
-    input_q = mp.Queue()
-    # connects standard input to thread
-    newstdin = os.fdopen(os.dup(sys.stdin.fileno()))
-    # creates multiprocess
-    get_inputs = mp.Process(target=get_input, args=(input_q, newstdin, file_valid))
-    # starts multiprocess
+    # creates thread
+    get_inputs = th.Thread(target=get_input, args=(file_valid, ))
+    # starts get_inputs thread
     get_inputs.start()
-    do(input_q, raven, csvData, xbc)
+    do(raven, csvData, xbc)
     get_inputs.join()
 
 
