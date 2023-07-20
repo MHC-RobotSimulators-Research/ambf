@@ -33,6 +33,94 @@ def control_reset():
     return new_control
 
 
+def update_pos_two_arm(dead_zone, controller, div):
+    # Coarse control of both raven arms
+
+    pos = [[0.0, 0.0],  # x - relative
+           [0.0, 0.0],  # y - relative
+           [0.0, 0.0],  # z - relative
+           [0.0, 0.0]]  # gangle - absolute
+
+    # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
+    if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
+        pos[2][0] = -controller[0][1] / div
+    else:
+        if dead_zone < abs(controller[0][0]):
+            pos[1][0] = -controller[0][0] / div
+        if dead_zone < abs(controller[0][1]):
+            pos[0][0] = -controller[0][1] / div
+    # Update coordinates for right arm
+    if controller[1][3] == 1 and dead_zone < abs(controller[1][1]):
+        pos[2][1] = -controller[1][1] / div
+    else:
+        if dead_zone < abs(controller[1][0]):
+            pos[1][1] = -controller[1][0] / div
+        if dead_zone < abs(controller[1][1]):
+            pos[0][1] = -controller[1][1] / div
+    # Set gripper angles
+    pos[3][0] = 1 - (controller[0][2] / 4)
+    # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
+    pos[3][1] = -1 + (controller[1][2] / 4)
+
+    return pos
+
+
+def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
+
+    pos = [[0.0, 0.0],  # x - relative
+           [0.0, 0.0],  # y - relative
+           [0.0, 0.0],  # z - relative
+           [0.0, 0.0]]  # gangle - absolute
+
+    # Cartesian control of desired arm
+    if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
+        pos[2][arm] = -controller[0][1] / div
+    else:
+        if dead_zone < abs(controller[0][0]):
+            pos[1][arm] = -controller[0][0] / div
+        if dead_zone < abs(controller[0][1]):
+            pos[0][arm] = -controller[0][1] / div
+
+    # Left arm
+    if not arm:
+        # Set left gripper angle
+        pos[3][0] = 1 - (controller[1][2] / 4)
+
+        # Set right j4
+        if dead_zone < abs(controller[1][0]):
+            if abs(home_dh[0][3] - controller[1][0] / 10) < m.pi:
+                home_dh[0][3] += -controller[1][0] / 10
+        # Position j5
+        if dead_zone < abs(controller[1][1]):
+            if abs(home_dh[0][4] - controller[1][1] / 10) < 2:
+                home_dh[0][4] += -controller[1][1] / 10
+
+    # Right arm
+    else:
+        # Set right gripper angle
+        pos[3][1] = -1 + (controller[1][2] / 4)
+
+        # Set right j4
+        if dead_zone < abs(controller[1][0]):
+            if abs(home_dh[1][3] + controller[1][0] / 10) < m.pi:
+                home_dh[1][3] += controller[1][0] / 10
+        # Position j5
+        if dead_zone < abs(controller[1][1]):
+            if abs(home_dh[1][4] + controller[1][1] / 10) < 2:
+                home_dh[1][4] += controller[1][1] / 10
+
+    return pos, home_dh
+
+
+def rumble(raven, xbc):
+    rumble = [0.0, 0.0]
+    for i in range(2):
+        if raven.limited[i]:
+            rumble[i] = 1
+    if rumble[0] != 0.0 or rumble[1] != 0.0:
+        xbc.rumble(rumble[0], rumble[1], 100)
+
+
 def do(raven, csvData, xbc):
     """
     performs the main actions of the robot based on the values
@@ -165,14 +253,6 @@ def do(raven, csvData, xbc):
             div = 200   # how much the raw input values will be divided by to produce the change in x,y,z
             dead_zone = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
 
-            # Cartesian coordinates are relative to the current position
-            x = [0.0, 0.0]
-            y = [0.0, 0.0]
-            z = [0.0, 0.0]
-
-            # gangle is absolute
-            gangle = [0.0, 0.0]
-
             controller = xbc.read()
 
             # Set which control mode to use
@@ -204,98 +284,29 @@ def do(raven, csvData, xbc):
             if controller[2][3]:
                 home_dh[1] = ard.HOME_DH[1]
 
-            # Coarse control of both raven arms
+            # Control both raven arms
             if arm_control[0] and arm_control[1]:
-                # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
-                if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
-                    z[0] = -controller[0][1] / div
-                else:
-                    if dead_zone < abs(controller[0][0]):
-                        y[0] = -controller[0][0] / div
-                    if dead_zone < abs(controller[0][1]):
-                        x[0] = -controller[0][1] / div
-                # Update coordinates for right arm
-                if controller[1][3] == 1 and dead_zone < abs(controller[1][1]):
-                    z[1] = -controller[1][1] / div
-                else:
-                    if dead_zone < abs(controller[1][0]):
-                        y[1] = -controller[1][0] / div
-                    if dead_zone < abs(controller[1][1]):
-                        x[1] = -controller[1][1] / div
-                # Set gripper angles
-                gangle[0] = 1 - (controller[0][2] / 4)
-                # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
-                gangle[1] = -1 + (controller[1][2] / 4)
-
+                # modify position using controller inputs
+                pos = update_pos_two_arm(dead_zone, controller, div)
                 # Plan next move based off of modifies cartesian coordinates
-                raven.plan_move(0, x[0], y[0], z[0], gangle[0], ik_mode, home_dh)
-                raven.plan_move(1, x[1], y[1], z[1], gangle[1], ik_mode, home_dh)
+                raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, home_dh)
+                raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, home_dh)
 
-            # Fine control of one arm
+            # Control one raven arm
             elif arm_control[0] or arm_control[1]:
                 # Decide which arm to control
                 arm = 0
                 if arm_control[1]:
                     arm = 1
-
-                # Cartesian control of desired arm
-                if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
-                    z[arm] = -controller[0][1] / div
-                else:
-                    if dead_zone < abs(controller[0][0]):
-                        y[arm] = -controller[0][0] / div
-                    if dead_zone < abs(controller[0][1]):
-                        x[arm] = -controller[0][1] / div
-
-                # Left arm
-                if arm_control[0]:
-                    # Set left gripper angle
-                    gangle[0] = 1 - (controller[1][2] / 4)
-
-                    # Set right j4
-                    if dead_zone < abs(controller[1][0]):
-                        if abs(home_dh[0][3] - controller[1][0] / 10) < m.pi:
-                            home_dh[0][3] += -controller[1][0] / 10
-                    # Position j5
-                    if dead_zone < abs(controller[1][1]):
-                        if abs(home_dh[0][4] - controller[1][1] / 10) < 2:
-                            home_dh[0][4] += -controller[1][1] / 10
-
-                # Right arm
-                else:
-                    # Set right gripper angle
-                    gangle[1] = -1 + (controller[1][2] / 4)
-
-                    # Set right j4
-                    if dead_zone < abs(controller[1][0]):
-                        if abs(home_dh[1][3] + controller[1][0] / 10) < m.pi:
-                            home_dh[1][3] += controller[1][0] / 10
-                    # Position j5
-                    if dead_zone < abs(controller[1][1]):
-                        if abs(home_dh[1][4] + controller[1][1] / 10) < 2:
-                            home_dh[1][4] += controller[1][1] / 10
-
+                # modify position using controller inputs
+                pos, home_dh = update_pos_one_arm(dead_zone, controller, div, arm, home_dh)
                 # Plan new position based off of desired cartesian changes
-                raven.plan_move(0, x[0], y[0], z[0], gangle[0], True, home_dh)
-                raven.plan_move(1, x[1], y[1], z[1], gangle[1], True, home_dh)
+                raven.plan_move(arm, pos[0][arm], pos[1][arm], pos[2][arm], pos[3][arm], True, home_dh)
 
             # Incrementally move the simulated raven to the new planned position
-            for i in range(raven.man_steps):
-                if not i:
-                    raven.moved[0] = raven.move(1, 1, i)
-                    raven.moved[1] = raven.move(1, 0, i)
-                else:
-                    raven.moved[0] = raven.move(0, 1, i)
-                    raven.moved[1] = raven.move(0, 0, i)
-                time.sleep(0.01)
-
+            raven.move()
             # rumble the controller when raven is limited
-            rumble = [0.0, 0.0]
-            for i in range(2):
-                if raven.limited[i]:
-                    rumble[i] = 1
-            if rumble[0] != 0.0 or rumble[1] != 0.0:
-                xbc.rumble(rumble[0], rumble[1], 100)
+            rumble(raven, controller)
 
     print("shutting down...\n")
     os.system('kill %d' % os.getpid())
@@ -310,11 +321,11 @@ def get_input(file_valid):
     global CONTROL
     global RECORD
     print("Input Menu:\n")
-    print("input 'h' for home\n")
-    print("input 's' for sine dance\n")
+    print("input 'h' for home")
+    print("input 's' for sine dance")
     if file_valid:
-        print("input 'f' for motion from file\n")
-    print("input 'm' for manual mode\n")
+        print("input 'f' for motion from file")
+    print("input 'm' for manual mode")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
     userinput = input()
