@@ -35,7 +35,6 @@ def do(q, raven, csvData, xbc):
     in the control array
 
     Args:
-
         q : a multiprocessing queue
         raven : an ambf_raven instance
         csvData : an array containing data from csv
@@ -61,7 +60,10 @@ def do(q, raven, csvData, xbc):
     while not control[2]:
         if not q.empty():
             control = q.get()
-        while control[0]and not any(raven.homed): # if after homing, code breaks, needs assistance
+        while control[0] and not any(raven.homed): # if after homing, code breaks, needs assistance
+            '''
+            Homing Mode:
+            '''
             for i in range(raven.loop_rate):
                 if not i:
                     print("starting homing")
@@ -78,6 +80,9 @@ def do(q, raven, csvData, xbc):
             if not q.empty():
                 control = q.get()
         while control[1]:
+            '''
+            Sine Dance:
+            '''
             if raven.i == 0:
                 start = time.time()
                 # similar to homing, moves raven incrementally in a sine pattern
@@ -93,6 +98,7 @@ def do(q, raven, csvData, xbc):
 
         while control[3] and not raven.finished:
             '''
+            File Mode:
             moves raven along a trajectory defined by a .csv function with 7 columns for each
             joint position in the desired movement
             '''
@@ -132,6 +138,7 @@ def do(q, raven, csvData, xbc):
 
         while control[4] and xbc is not None:
             '''
+            Manual Mode:
             Manual control mode for the simulated raven2 using an xbox controller. There are two
             modes. The first enables simultaneous control of both arms on the xyz axes, but locks
             joints 4, 5, and 6 to their home positions. Accessed by simultaneously pressing back 
