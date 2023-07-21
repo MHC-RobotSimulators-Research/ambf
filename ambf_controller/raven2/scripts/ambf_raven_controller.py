@@ -10,6 +10,7 @@ import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
 import ambf_raven_recorder as arc
+import raven_fk as fk
 
 
 '''
@@ -112,7 +113,7 @@ def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
     return pos, home_dh
 
 
-def rumble(raven, xbc):
+def rumble_if_limited(raven, xbc):
     rumble = [0.0, 0.0]
     for i in range(2):
         if raven.limited[i]:
@@ -148,6 +149,7 @@ def do(raven, csvData, xbc):
     home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
                         [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                        dtype="float")
+    curr_tm = None
 
     while not CONTROL[2]:
 
@@ -155,34 +157,13 @@ def do(raven, csvData, xbc):
             '''
             Homing Mode:
             '''
-            for i in range(raven.loop_rate):
-                if not i:
-                    print("starting homing")
-                    # moves raven incrementally towards home position, if home position is reached, returns True
-                    raven.homed[0] = raven.go_home(1, 1, i)
-                    raven.homed[1] = raven.go_home(1, 0, i)
-                else:
-                    raven.homed[0] = raven.go_home(0, 1, i)
-                    raven.homed[1] = raven.go_home(0, 0, i)
-                time.sleep(0.01)
-            if raven.homed[0] and raven.homed[1]:
-                print("Raven is homed!")
+            raven.go_home()
 
         while CONTROL[1]:
             '''
             Sine Dance:
             '''
-            if raven.i == 0:
-                start = time.time()
-                # similar to homing, moves raven incrementally in a sine pattern
-                raven.sine_dance(1, 1, raven.i, raven.rampup_count)
-                raven.sine_dance(1, 0, raven.i, raven.rampup_count)
-            else:
-                raven.sine_dance(0, 1, raven.i, raven.rampup_count)
-                raven.sine_dance(0, 0, raven.i, raven.rampup_count)
-
-            raven.i += 1
-            time.sleep(0.01)
+            raven.sine_dance()
 
         while CONTROL[3] and not raven.finished:
             '''
@@ -190,32 +171,33 @@ def do(raven, csvData, xbc):
             moves raven along a trajectory defined by a .csv function with 7 columns for each
             joint position in the desired movement
             '''
-            if ard.RECORD_FLAG:
-                with open(ard.TO_FILE, 'wb') as file:
-                    writer = csv.writer(file)
-                    line = raven.get_raven_status(0,True)
-                    writer.writerow(line)
-                    start = time.time()
-
-                    while not raven.finished:
-                        curr_time = time.time() - start
-                        if int(curr_time * 1000) >= csvData.shape[0]:
-                            raven.finished = True
-                            print("Raven has completed set trajectory")
-                            break
-                        raven.set_raven_pos(csvData[int(curr_time * 1000)])
-                        line = raven.get_raven_status(int(curr_time * 1000))
-                        writer.writerow(line)
-            else:
-                start = time.time()
-                while not raven.finished:
-                    curr_time = time.time() - start
-                    if int(curr_time * 50) >= csvData.shape[0]:
-                        raven.finished = True
-                        print("Raven has completed set trajectory")
-                        break
-                    raven.set_raven_pos(csvData[int(curr_time * 50)])
-                    #time.sleep(0.01)
+            # if ard.RECORD_FLAG:
+            #     with open(ard.TO_FILE, 'wb') as file:
+            #         writer = csv.writer(file)
+            #         line = raven.get_raven_status(0,True)
+            #         writer.writerow(line)
+            #         start = time.time()
+            #
+            #         while not raven.finished:
+            #             curr_time = time.time() - start
+            #             if int(curr_time * 1000) >= csvData.shape[0]:
+            #                 raven.finished = True
+            #                 print("Raven has completed set trajectory")
+            #                 break
+            #             raven.set_raven_pos(csvData[int(curr_time * 1000)])
+            #             line = raven.get_raven_status(int(curr_time * 1000))
+            #             writer.writerow(line)
+            # else:
+            start = time.time()
+            while not raven.finished:
+                curr_time = time.time() - start
+                if int(curr_time * 50) >= csvData.shape[0]:
+                    raven.finished = True
+                    print("Raven has completed set trajectory")
+                    break
+                raven.set_raven_pos(csvData[int(curr_time * 50)])
+                time.sleep(0.001)
+                print(curr_time)
 
         if CONTROL[4] and xbc is None:
             print("No xbox controller detected\n"
@@ -250,10 +232,14 @@ def do(raven, csvData, xbc):
             Y button: revert right arm gripper to its home position
             '''
 
-            div = 200   # how much the raw input values will be divided by to produce the change in x,y,z
+            div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
             dead_zone = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
 
             controller = xbc.read()
+
+            if curr_tm is None:
+                curr_tm = [fk.fwd_kinematics_p5(0, np.array(raven.arms[0].get_all_joint_pos(), dtype="float")),
+                           fk.fwd_kinematics_p5(1, np.array(raven.arms[1].get_all_joint_pos(), dtype="float"))]
 
             # Set which control mode to use
             if controller[2][4] and controller[2][5]:
@@ -288,9 +274,26 @@ def do(raven, csvData, xbc):
             if arm_control[0] and arm_control[1]:
                 # modify position using controller inputs
                 pos = update_pos_two_arm(dead_zone, controller, div)
-                # Plan next move based off of modifies cartesian coordinates
+                # Plan next move based off of modified cartesian coordinates
                 raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, home_dh)
                 raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, home_dh)
+
+            # Control both raven arms with absolute cart pos
+            # if arm_control[0] and arm_control[1]:
+            #     # modify position using controller inputs
+            #     pos = update_pos_two_arm(dead_zone, controller, div)
+            #     # Plan next move based off of modified cartesian coordinates
+            #
+            #     curr_tm[0][0, 3] += pos[0][0]  # left x
+            #     curr_tm[0][1, 3] += pos[1][0]  # left y
+            #     curr_tm[0][2, 3] += pos[2][0]  # left z
+            #
+            #     curr_tm[1][0, 3] += pos[0][1]  # right x
+            #     curr_tm[1][1, 3] += pos[1][1]  # right y
+            #     curr_tm[1][2, 3] += pos[2][1]  # right z
+            #
+            #     raven.plan_move_abs(0, curr_tm[0], pos[3][0], ik_mode, home_dh)
+            #     raven.plan_move_abs(1, curr_tm[1], pos[3][1], ik_mode, home_dh)
 
             # Control one raven arm
             elif arm_control[0] or arm_control[1]:
@@ -306,7 +309,7 @@ def do(raven, csvData, xbc):
             # Incrementally move the simulated raven to the new planned position
             raven.move()
             # rumble the controller when raven is limited
-            rumble(raven, controller)
+            rumble_if_limited(raven, xbc)
 
     print("shutting down...\n")
     os.system('kill %d' % os.getpid())
@@ -354,6 +357,7 @@ def get_input(file_valid):
             CONTROL = control_reset()
             CONTROL[4] = True
             userinput = input("Input key to switch control modes\n")
+        userinput = input()
 
 
 def file_loader():
