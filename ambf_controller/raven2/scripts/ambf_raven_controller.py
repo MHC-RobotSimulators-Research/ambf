@@ -9,7 +9,7 @@ import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
-import ambf_raven_recorder as arc
+import ambf_raven_recorder as arr
 import raven_fk as fk
 
 
@@ -24,6 +24,8 @@ sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 
 CONTROL = [False, False, False, False, False]
 RECORD = False
+RECORDING = False
+RECORD_TO = ""
 
 
 def control_reset():
@@ -122,7 +124,7 @@ def rumble_if_limited(raven, xbc):
         xbc.rumble(rumble[0], rumble[1], 100)
 
 
-def do(raven, csvData, xbc):
+def do(raven, csvData, xbc, recorder=None):
     """
     performs the main actions of the robot based on the values
     in the control array
@@ -141,6 +143,10 @@ def do(raven, csvData, xbc):
     control[3] = file mode
     control[4] = manual mode
     '''
+    global RECORD
+    global RECORDING
+    global RECORD_TO
+
     # Sets which mode will be used in manual control
     arm_control = [True, True]
     # True for p5 ik and false for standard ik
@@ -188,16 +194,25 @@ def do(raven, csvData, xbc):
             #             line = raven.get_raven_status(int(curr_time * 1000))
             #             writer.writerow(line)
             # else:
+
+            if RECORD:
+                recorder.start_recording(RECORD_TO)
+                recorder.write_raven_status(raven, True)
+
             start = time.time()
             while not raven.finished:
+                if RECORD:
+                    recorder.write_raven_status(raven)
                 curr_time = time.time() - start
                 if int(curr_time * 50) >= csvData.shape[0]:
                     raven.finished = True
                     print("Raven has completed set trajectory")
                     break
                 raven.set_raven_pos(csvData[int(curr_time * 50)])
-                time.sleep(0.001)
+                time.sleep(0.005)
                 print(curr_time)
+
+            recorder.stop_recording()
 
         if CONTROL[4] and xbc is None:
             print("No xbox controller detected\n"
@@ -231,6 +246,18 @@ def do(raven, csvData, xbc):
             X button: revert left arm gripper to its home position
             Y button: revert right arm gripper to its home position
             '''
+
+            # Recorder
+            if RECORD:
+                if RECORDING:
+                    recorder.write_raven_status(raven)
+                else:
+                    recorder.start_recording(RECORD_TO)
+                    recorder.write_raven_status(raven, True)
+                    RECORDING = True
+            elif RECORDING:
+                recorder.stop_recording()
+                RECORDING = False
 
             div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
             dead_zone = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
@@ -323,11 +350,13 @@ def get_input(file_valid):
     """
     global CONTROL
     global RECORD
+    global RECORD_TO
     print("Input Menu:\n")
     print("input 'h' for home")
     print("input 's' for sine dance")
     if file_valid:
         print("input 'f' for motion from file")
+        print("input 'r' for motion from file with recording")
     print("input 'm' for manual mode")
     print("input 'q' for quit\n")
     print("Please select a control mode:")
@@ -353,12 +382,23 @@ def get_input(file_valid):
             CONTROL = control_reset()
             CONTROL[3] = True
             userinput = input("Input key to switch control modes\n")
+        elif userinput == 'r' and file_valid:
+            RECORD_TO = input("Please enter filename to record to (example.csv): ")
+            CONTROL = control_reset()
+            CONTROL[3] = True
+            RECORD = True
+            userinput = input("Input key to switch control modes\n")
         elif userinput == 'm':
             CONTROL = control_reset()
             CONTROL[4] = True
-            userinput = input("Input key to switch control modes\n")
-        userinput = input()
-
+            userinput = input("Input key to switch control modes or input 'j' to begin recording\n")
+        elif userinput == 'j' and CONTROL[4]:
+            RECORD_TO = input("Please enter filename to record to (example.csv): ")
+            RECORD = True
+            userinput = input("Now recording to csv, input 'k' to stop recording\n")
+        elif userinput == 'k' and CONTROL[4] and RECORDING:
+            RECORD = False
+            userinput = input("Recording stopped, input key to switch control modes\n")
 
 def file_loader():
     file_valid = True
@@ -375,10 +415,10 @@ def file_loader():
     csvData = np.asarray(csvData, dtype = "float")
 
     # sanity check to see if the file follows the expected format
-    if (csvData.shape[0] == 0):
+    if csvData.shape[0] == 0:
         file_valid = False
         print("Raven trajectory file empty or not found.")
-    elif (csvData.shape[1] != ard.COL_IN_FILE):
+    elif csvData.shape[1] != ard.COL_IN_FILE:
         file_valid = False
         print("Raven trajectory file format invalid. ("+str( ard.COL_IN_FILE)+" cols expected)")
     return file_valid, csvData
@@ -393,6 +433,8 @@ def main():
     file_valid, csvData = file_loader()
     # creates raven object
     raven = arav.ambf_raven()
+    #create recorder instance
+    recorder = arr.ambf_raven_recorder()
     # set raven man_steps
     raven.man_steps = 17
     # creates xbox controller object if there is a controller connected
@@ -406,7 +448,7 @@ def main():
     get_inputs = th.Thread(target=get_input, args=(file_valid, ))
     # starts get_inputs thread
     get_inputs.start()
-    do(raven, csvData, xbc)
+    do(raven, csvData, xbc, recorder)
     get_inputs.join()
 
 
