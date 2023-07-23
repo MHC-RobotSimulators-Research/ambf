@@ -262,6 +262,16 @@ class ambf_raven:
         # print("ik ", timeit.timeit(lambda: ik.inv_kinematics_p5(arm, curr_tm, gangle), setup="pass", number=1))
 
     def plan_move_abs(self, arm, tm, gangle, p5=False, home_dh=ard.HOME_DH):
+        """
+        Plans a move using the absolute cartesian position
+        Args:
+            arm (int) : 0 for the left arm and 1 for the right arm
+            tm (numpy.array) : desired transformation matrix
+            gangle (float) : the gripper angle, 0 is closed
+            p5 (bool) : when false uses standard kinematics, when true uses p5 kinematics
+            home_dh (array) : array containing home position, or desired postion of the
+                joints not set by cartesian coordinates in inv_kinematics_p5
+        """
         if p5:
             jpl = ik.inv_kinematics_p5(arm, tm, gangle, home_dh)
         else:
@@ -272,18 +282,34 @@ class ambf_raven:
         new_jp = jpl[0]
         self.next_jp[arm] = new_jp
 
-    def move_increment(self, first_entry, arm, count):
+    def calc_increment(self, arm):
+        """
+        Calculates the difference between the current joint positions and planned joint positions
+        then calculates the number of increments required to stay within joint rotation limits
+        Args:
+            arm (int) : 0 for the left arm and 1 for the right arm
+        """
+        # Calculate delta jp
+        for i in range(self.raven_joints):
+            self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
+            self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
+
+        # Find safe increment
+        increment = self.delta_jp[arm] / ard.MAX_JR
+        print("increments: ", increment)
+        return max(map(abs, increment)) + 1
+
+    def move_increment(self, first_entry, arm, count, increments):
         """
         slowly increment the robot's position until it reaches the desired
         inputted position. uses a similar method structure to home
         """
-
-        if first_entry:
-            for i in range(self.raven_joints):
-                self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
-                self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
+        # if first_entry:
+        #     for i in range(self.raven_joints):
+        #         self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
+        #         self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
         # gradualizes movement from a to b
-        scale = min(1.0 * count / self.man_steps, 1.0)
+        scale = min(1.0 * count / increments, 1.0)
         # array containing distance to go to start point
         diff_jp = [0, 0, 0, 0, 0, 0, 0]
 
@@ -305,15 +331,26 @@ class ambf_raven:
     def move(self):
         """
         Uses the helper function move increment to move to the next planned position
-        over a number of steps equal to man_steps
+        over a number of steps equal to man_steps or the number of increments required
+        to keep each move within safe limits
         """
-        for i in range(self.man_steps):
+        # Find safe increment
+        safe_increment = int(max(self.calc_increment(0), self.calc_increment(1)))
+
+        if safe_increment <= self.man_steps:
+            increments = self.man_steps
+        else:
+            increments = safe_increment
+
+        print("inc: ", increments)
+
+        for i in range(increments):
             if not i:
-                self.moved[0] = self.move_increment(1, 1, i)
-                self.moved[1] = self.move_increment(1, 0, i)
+                self.moved[0] = self.move_increment(1, 1, i, increments)
+                self.moved[1] = self.move_increment(1, 0, i, increments)
             else:
-                self.moved[0] = self.move_increment(0, 1, i)
-                self.moved[1] = self.move_increment(0, 0, i)
+                self.moved[0] = self.move_increment(0, 1, i, increments)
+                self.moved[1] = self.move_increment(0, 0, i, increments)
             time.sleep(0.005)
 
     def move_now(self, arm):
