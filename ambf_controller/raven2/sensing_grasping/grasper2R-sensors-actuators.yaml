@@ -1,0 +1,68 @@
+bodies: []
+joints: []
+sensors: [SENSOR grasper2_R_PS]
+actuators: [ACTUATOR grasper2_R_C0, ACTUATOR grasper2_R_C1, ACTUATOR grasper2_R_C2, ACTUATOR grasper2_R_C3]
+high resolution path: ../
+low resolution path: ../
+ignore inter-collision: true
+namespace: /ambf/env/
+
+# We can create an anchor in YAML that can be later used as an alias in the rest
+# of this file
+parent: &default_parent grasper2_R # This is the name of the 7th link in the KUKA robot. (Only part of the name is sufficient)
+
+SENSOR grasper2_R_PS:
+  name: grasper2_R_PS
+  type: Proximity
+  location:
+    orientation: {p: 0.0, r: 0.0, y: 0.0}
+    position: {x: 0.0015, y: 0.0, z: -0.0005}
+  array:
+    -
+      offset: {x: 0.0, y: 0.005, z: 0.0}
+      direction: {x: 0.0, y: 0.0, z: -1.0}
+    -
+      offset: {x: 0.0, y: 0.01, z: 0.0}
+      direction: {x: 0.0, y: 0.0, z: -1.0}
+    -
+      offset: {x: 0.0, y: 0.015, z: 0.0}
+      direction: {x: 0.0, y: 0.0, z: -1.0}
+    -
+      offset: {x: 0.0, y: 0.02, z: 0.0}
+      direction: {x: 0.0, y: 0.0, z: -1.0}
+  range: 0.0005
+  parent: *default_parent
+  visible: True
+  visible size: 0.001
+
+ACTUATOR grasper2_R_C0:
+  name: grasper2_R_C0
+  type: Constraint
+  location:
+    orientation: {p: 0.0, r: 0.0, y: 0.0}
+    position: {x: 0.0015, y: 0.005, z: -0.0005}
+  parent: *default_parent
+
+ACTUATOR grasper2_R_C1:
+  name: grasper2_R_C1
+  type: Constraint
+  location:
+    orientation: {p: 0.0, r: 0.0, y: 0.0}
+    position: {x: 0.0015, y: 0.01, z: -0.0005}
+  parent: *default_parent
+
+ACTUATOR grasper2_R_C2:
+  name: grasper2_R_C2
+  type: Constraint
+  location:
+    orientation: {p: 0.0, r: 0.0, y: 0.0}
+    position: {x: 0.0015, y: 0.015, z: -0.0005}
+  parent: *default_parent
+
+ACTUATOR grasper2_R_C3:
+  name: grasper2_R_C3
+  type: Constraint
+  location:
+    orientation: {p: 0.0, r: 0.0, y: 0.0}
+    position: {x: 0.0015, y: 0.02, z: -0.0005}
+  parent: *default_parent
