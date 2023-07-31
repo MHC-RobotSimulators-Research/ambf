@@ -7,6 +7,9 @@ import sys
 
 # Defines variables used in raven_fk, raven_ik, etc.
 
+Deg2Rad = np.pi / 180.0
+Rad2Deg = 180.0 / np.pi
+
 V            = -1
 CAMERA_COUNT = 3
 RAVEN_JOINTS = 7
@@ -22,7 +25,9 @@ HOME_DH            = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi
                                 [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                                 dtype="float")
 
-MAX_JR             = np.array([0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000], dtype="float")
+MAX_JR             = np.array([5*Deg2Rad, 5*Deg2Rad, 0.02, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad], dtype="float") / 200
+# MAX_JR             = np.array([0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000], dtype="float")
+
 
 DANCE_SCALE_JOINTS = np.array([   0.3,          0.3,  0.06,             0.3, 1.2,       m.pi/6,       m.pi/6],  dtype = 'float')
 
