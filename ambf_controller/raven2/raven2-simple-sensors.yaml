@@ -1,0 +1,12 @@
+# This is the base file for Coordination Application
+world config: ../../ambf_models/descriptions/world/world.yaml
+# world config: ./world/raven_world.yaml
+color config: ../../ambf_models/descriptions/color/colors.yaml
+input devices config: ../../ambf_models/descriptions/input_devices/input_devices.yaml
+multibody configs:
+  - "../../ambf_models/descriptions/multi-bodies/robots/blender-raven2-simple.yaml" #0
+  - "./sensing_grasping/grasper1L-sensors-actuators.yaml" #1
+  - "./sensing_grasping/grasper2L-sensors-actuators.yaml" #2
+  - "./sensing_grasping/grasper1R-sensors-actuators.yaml" #3
+  - "./sensing_grasping/grasper2R-sensors-actuators.yaml" #4
+#  - "../../ambf_models/descriptions/multi-bodies/environments/TexturedGround/env.yaml" #5
