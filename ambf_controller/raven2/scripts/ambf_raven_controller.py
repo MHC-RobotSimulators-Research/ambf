@@ -11,7 +11,7 @@ import ambf_raven_def as ard
 import ambf_xbox_controller as axc
 import ambf_raven_recorder as arr
 import raven_fk as fk
-
+import ambf_raven_grasping as arg
 
 '''
 authors: Natalie Chalfant, Sean Fabrega
@@ -124,7 +124,7 @@ def rumble_if_limited(raven, xbc):
         xbc.rumble(rumble[0], rumble[1], 100)
 
 
-def do(raven, csvData, xbc, recorder=None):
+def do(raven, csvData, xbc, grasper,recorder=None):
     """
     performs the main actions of the robot based on the values
     in the control array
@@ -305,22 +305,12 @@ def do(raven, csvData, xbc, recorder=None):
                 raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, home_dh)
                 raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, home_dh)
 
-            # Control both raven arms with absolute cart pos
-            # if arm_control[0] and arm_control[1]:
-            #     # modify position using controller inputs
-            #     pos = update_pos_two_arm(dead_zone, controller, div)
-            #     # Plan next move based off of modified cartesian coordinates
-            #
-            #     curr_tm[0][0, 3] += pos[0][0]  # left x
-            #     curr_tm[0][1, 3] += pos[1][0]  # left y
-            #     curr_tm[0][2, 3] += pos[2][0]  # left z
-            #
-            #     curr_tm[1][0, 3] += pos[0][1]  # right x
-            #     curr_tm[1][1, 3] += pos[1][1]  # right y
-            #     curr_tm[1][2, 3] += pos[2][1]  # right z
-            #
-            #     raven.plan_move_abs(0, curr_tm[0], pos[3][0], ik_mode, home_dh)
-            #     raven.plan_move_abs(1, curr_tm[1], pos[3][1], ik_mode, home_dh)
+                try:
+                    for i in range(2):
+                        grasper.set_grasp(i, controller[i][2])
+                        grasper.grasp_object(i)
+                except AttributeError:
+                    pass
 
             # Control one raven arm
             elif arm_control[0] or arm_control[1]:
@@ -332,6 +322,12 @@ def do(raven, csvData, xbc, recorder=None):
                 pos, home_dh = update_pos_one_arm(dead_zone, controller, div, arm, home_dh)
                 # Plan new position based off of desired cartesian changes
                 raven.plan_move(arm, pos[0][arm], pos[1][arm], pos[2][arm], pos[3][arm], True, home_dh)
+
+                try:
+                    grasper.set_grasp(arm, controller[1][2])
+                    grasper.grasp_object(arm)
+                except AttributeError:
+                    pass
 
             # Incrementally move the simulated raven to the new planned position
             raven.move()
@@ -400,6 +396,7 @@ def get_input(file_valid):
             RECORD = False
             userinput = input("Recording stopped, input key to switch control modes\n")
 
+
 def file_loader():
     file_valid = True
     csvData= []
@@ -435,6 +432,10 @@ def main():
     raven = arav.ambf_raven()
     #create recorder instance
     recorder = arr.ambf_raven_recorder()
+    # create grasper instance
+
+    grasper = arg.ambf_raven_grasping()
+
     # set raven man_steps
     raven.man_steps = 17
     # creates xbox controller object if there is a controller connected
@@ -448,7 +449,7 @@ def main():
     get_inputs = th.Thread(target=get_input, args=(file_valid, ))
     # starts get_inputs thread
     get_inputs.start()
-    do(raven, csvData, xbc, recorder)
+    do(raven, csvData, xbc, grasper, recorder)
     get_inputs.join()
 
 
