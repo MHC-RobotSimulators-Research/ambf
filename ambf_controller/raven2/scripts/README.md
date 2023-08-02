@@ -5,6 +5,11 @@ AMBF Raven controller is a Python client that controls the simulated Raven II su
 It consists of 5 different modes: homing, sine dance, file mode, and manual mode. Joint level control 
 is possible using the file mode while manual allows cartesian control in realtime using an Xbox controller.
 
+This controller is designed to work with both first party and third party XBox controllers. Depending on which
+controller type you are using the global DEADZONE variable (found at the beginning of ambf_raven_controller.py) 
+may need to be modified to prevent drift or provide the most responsive control. If you experience drift (raven
+continuing to move even when there is no input) increase the DEADZONE variable until it stops.
+
 ## Homing
 Accessed by pressing the h key when prompted to select a mode. This mode returns the simulated Raven II
 to its home position.
