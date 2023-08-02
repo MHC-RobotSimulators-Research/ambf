@@ -22,7 +22,15 @@ simulated environment
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 
-CONTROL = [False, False, False, False, False]
+DEADZONE = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
+CONTROL = [False, False, False, False, False]  # Defines control mode in do
+'''
+control[0] = homing
+control[1] = sine dance
+control[2] = quit
+control[3] = file mode
+control[4] = manual mode
+'''
 RECORD = False
 RECORDING = False
 RECORD_TO = ""
@@ -136,16 +144,10 @@ def do(raven, csvData, xbc, grasper,recorder=None):
         xbc : an ambf_xbox_controller instance
     """
     global CONTROL
-    '''
-    control[0] = homing
-    control[1] = sine dance
-    control[2] = quit
-    control[3] = file mode
-    control[4] = manual mode
-    '''
     global RECORD
     global RECORDING
     global RECORD_TO
+    global DEADZONE
 
     # Sets which mode will be used in manual control
     arm_control = [True, True]
@@ -260,7 +262,7 @@ def do(raven, csvData, xbc, grasper,recorder=None):
                 RECORDING = False
 
             div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
-            dead_zone = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
+            dead_zone = DEADZONE
 
             controller = xbc.read()
 
