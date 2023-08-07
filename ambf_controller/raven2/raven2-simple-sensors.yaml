@@ -1,5 +1,5 @@
 # This is the base file for Coordination Application
-world config: ../../ambf_models/descriptions/world/world.yaml
+world config: ./raven_world.yaml
 # world config: ./world/raven_world.yaml
 color config: ../../ambf_models/descriptions/color/colors.yaml
 input devices config: ../../ambf_models/descriptions/input_devices/input_devices.yaml
