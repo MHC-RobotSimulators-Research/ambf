@@ -7,6 +7,8 @@ import utilities as u
 import numpy as np
 import ambf_raven_def as ard
 import timeit
+import threading as th
+
 
 '''
 author: Natalie Chalfant, Sean Fabrega
@@ -34,6 +36,7 @@ class ambf_raven:
         self.delta_jp = np.zeros((2, 7))
         self.home_joints = ard.HOME_JOINTS
         self.next_jp = np.zeros((2, 7))
+        self.send_jp = np.zeros((2, 7))
         self.dance_scale_joints = ard.DANCE_SCALE_JOINTS
         self.loop_rate = ard.LOOP_RATE
         self.raven_joints = ard.RAVEN_JOINTS
@@ -44,6 +47,39 @@ class ambf_raven:
         self.rampup_speed = 0.5 / self.loop_rate
         self.finished = False
         self.man_steps = 30
+
+        self.set_start_pos()
+        self._sender = th.Thread(target=self._send_command, args=(), daemon=True)
+        self._sender.start()
+
+    def _send_command(self):
+        while True:
+            for i in range(len(self.arms)):
+                for j in range(self.arms[i].get_num_joints()):
+                    self.arms[i].set_joint_pos(j, self.send_jp[i][j])
+            time.sleep(ard.PUBLISH_TIME)
+
+    def set_start_pos(self):
+        for i in range(len(self.arms)):
+            for j in range(self.arms[i].get_num_joints()):
+                self.start_jp[i][j] = self.arms[i].get_joint_pos(j)
+
+    def home_fast(self):
+        max_attempts = 3
+
+        for i in range(max_attempts):
+            if not any(self.homed):
+                self.next_jp = [self.home_joints, self.home_joints]
+                self.move()
+
+                for j in range(len(self.moved)):
+                    self.homed[j] = self.moved[j]
+
+                if all(self.homed):
+                    print("Raven is homed!")
+
+        if not all(self.homed):
+            print("Raven could not be homed, please restart the controller :(")
 
     def go_home(self):
         """
@@ -119,39 +155,116 @@ class ambf_raven:
     def get_t_command(self):
         return self.arms[0].get_torque_command(), self.arms[1].get_torque_command
 
-    def get_raven_status(self, time_now, first_entry=False):
-        if first_entry:
-            status = ["time"]
-            for arm in range(2):
-                for j in range(7):
-                    status.append("jpos" + str(arm * 7 + j))
-                for j in range(7):
-                    status.append("jvel" + str(arm * 7 + j))
-                link_names = self.arms[arm].get_children_names()
-                for pre in ["_pos", "_apos", "_vel", "_avel"]:
-                    for j in range(self.arms[arm].get_num_of_children()):
-                        status.append(link_names[j] + pre + "x")
-                        status.append(link_names[j] + pre + "y")
-                        status.append(link_names[j] + pre + "z")
-            return status
-        else:
-            status = [time_now]
-            for arm in range(2):
-                status.extend(self.arms[arm].get_all_joint_pos())  # 7 numbers
-                status.extend(self.arms[arm].get_all_joint_vel())  # 7 numbers
-                # status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
+    def get_raven_status(self):
+        status = [(time.time())]
 
-                link_names = self.arms[arm].get_children_names()
-                for j in range(self.arms[arm].get_num_of_children()):
-                    curr_link = self._client.get_obj_handle('raven_2/' + link_names[j])
-                    status.extend(curr_link.get_pose())  # 6 numbers
-                    vel = curr_link.get_linear_vel()
-                    avel = curr_link.get_angular_vel()
-                    status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z])  # 6 numbers
-                # frc = self.arms[arm].get_force_command()
-                # trq = self.arms[arm].get_torque_command()
-                # status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
-            return status
+        # Add jpos for both arms
+        for i in range(len(self.arms)):
+            status.extend(self.arms[i].get_all_joint_pos().insert(3, 0))  # 7 numbers
+
+        # Placeholders for runlevel, sublevel, and last_seq
+        for i in range(3):
+            status.append(float("nan"))
+
+        # Placeholders for type
+        for i in range(2):
+            status.append(float("nan"))
+
+        # Placeholders for pos
+        for i in range(6):
+            status.append(float("nan"))
+
+        # Placeholders for ori
+        for i in range(18):
+            status.append(float("nan"))
+
+        # Placeholders for ori_d
+        for i in range(18):
+            status.append(float("nan"))
+
+        # Placeholders for pos_d
+        for i in range(6):
+            status.append(float("nan"))
+
+        # Placeholders for encVals
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for dac_val
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for Tau
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for mpos
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for mvel
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Add jvel for both arms
+        for i in range(len(self.arms)):
+            status.extend(self.arms[i].get_all_joint_vel().insert(3, 0))  # 7 numbers
+
+        # Placeholders for jpos_d
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for grasp_d
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for encoffsets
+        for i in range(16):
+            status.append(float("nan"))
+
+        # Placeholders for jac_vel
+        for i in range(12):
+            status.append(float("nan"))
+
+        # Placeholders for jac_f
+        for i in range(12):
+            status.append(float("nan"))
+
+        return status
+
+    # def get_raven_status(self, time_now, first_entry=False):
+    #     if first_entry:
+    #         status = ["time"]
+    #         for arm in range(2):
+    #             for j in range(7):
+    #                 status.append("jpos" + str(arm * 7 + j))
+    #             for j in range(7):
+    #                 status.append("jvel" + str(arm * 7 + j))
+    #             link_names = self.arms[arm].get_children_names()
+    #             for pre in ["_pos", "_apos", "_vel", "_avel"]:
+    #                 for j in range(self.arms[arm].get_num_of_children()):
+    #                     status.append(link_names[j] + pre + "x")
+    #                     status.append(link_names[j] + pre + "y")
+    #                     status.append(link_names[j] + pre + "z")
+    #         return status
+    #     else:
+    #         status = [time_now]
+    #         for arm in range(2):
+    #             status.extend(self.arms[arm].get_all_joint_pos())  # 7 numbers
+    #             status.extend(self.arms[arm].get_all_joint_vel())  # 7 numbers
+    #             # status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
+    #
+    #             link_names = self.arms[arm].get_children_names()
+    #             for j in range(self.arms[arm].get_num_of_children()):
+    #                 curr_link = self._client.get_obj_handle('raven_2/' + link_names[j])
+    #                 status.extend(curr_link.get_pose())  # 6 numbers
+    #                 vel = curr_link.get_linear_vel()
+    #                 avel = curr_link.get_angular_vel()
+    #                 status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z])  # 6 numbers
+    #             # frc = self.arms[arm].get_force_command()
+    #             # trq = self.arms[arm].get_torque_command()
+    #             # status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
+    #         return status
 
     def set_raven_pos(self, pos_list):
         """
@@ -257,6 +370,10 @@ class ambf_raven:
         self.next_jp[arm] = new_jp
         # for i in range(len(new_jp)):
             # print("diff: ", new_jp[i]-curr_jp[i])
+        # if arm:
+        #     print("right arm: ", self.next_jp)
+        # else:
+        #     print("left arm: ", self.next_jp)
 
         # print("fk ", timeit.timeit(lambda: fk.fwd_kinematics_p5(arm, curr_jp), setup="pass",number=1))
         # print("ik ", timeit.timeit(lambda: ik.inv_kinematics_p5(arm, curr_tm, gangle), setup="pass", number=1))
@@ -299,6 +416,30 @@ class ambf_raven:
         # print("increments: ", increment)
         return max(map(abs, increment)) + 1
 
+    # def move_increment(self, arm, count, increments):
+    #     """
+    #     slowly increment the robot's position until it reaches the desired
+    #     inputted position. uses a similar method structure to home
+    #     """
+    #     scale = min(1.0 * count / increments, 1.0)
+    #     # array containing distance to go to start point
+    #     diff_jp = [0, 0, 0, 0, 0, 0, 0]
+    #
+    #     # sets position for each joint
+    #     for i in range(self.arms[arm].get_num_joints()):
+    #         self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
+    #         diff_jp[i] = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
+    #
+    #     # in progress, indicates when arm has reached next_jp
+    #     max_value = np.max(diff_jp)
+    #
+    #     if max_value < 0.1 or self.limited[arm]:
+    #         self.moved[arm] = True
+    #
+    #     else:
+    #         self.moved[arm] = False
+    #     return self.moved[arm]
+
     def move_increment(self, arm, count, increments):
         """
         slowly increment the robot's position until it reaches the desired
@@ -309,19 +450,22 @@ class ambf_raven:
         diff_jp = [0, 0, 0, 0, 0, 0, 0]
 
         # sets position for each joint
+
+        self.send_jp[arm] =  scale * self.delta_jp[arm] + self.start_jp[arm]
+
         for i in range(self.arms[arm].get_num_joints()):
-            self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
-            diff_jp[i] = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
+            diff_jp = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
 
         # in progress, indicates when arm has reached next_jp
         max_value = np.max(diff_jp)
 
-        if max_value < 0.01 or self.limited[arm]:
+        if max_value < 0.1 or self.limited[arm]:
             self.moved[arm] = True
 
         else:
             self.moved[arm] = False
         return self.moved[arm]
+
 
     def move(self):
         """
@@ -340,13 +484,9 @@ class ambf_raven:
         # print("inc: ", increments)
 
         for i in range(increments):
-            if not i:
-                self.moved[0] = self.move_increment(1, i, increments)
-                self.moved[1] = self.move_increment(0, i, increments)
-            else:
-                self.moved[0] = self.move_increment(1, i, increments)
-                self.moved[1] = self.move_increment(0, i, increments)
-            time.sleep(0.005)
+            self.moved[0] = self.move_increment(0, i, increments)
+            self.moved[1] = self.move_increment(1, i, increments)
+            time.sleep(0.001)
 
     def move_now(self, arm):
         """
