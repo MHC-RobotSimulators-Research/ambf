@@ -8,6 +8,7 @@ import numpy as np
 import ambf_raven_def as ard
 import timeit
 import threading as th
+import multiprocessing as mp
 
 
 '''
@@ -52,11 +53,20 @@ class ambf_raven:
         self._sender = th.Thread(target=self._send_command, args=(), daemon=True)
         self._sender.start()
 
+        self.receive_pos, self.send_pos = mp.Pipe(False)
+
     def _send_command(self):
         while True:
             for i in range(len(self.arms)):
                 for j in range(self.arms[i].get_num_joints()):
                     self.arms[i].set_joint_pos(j, self.send_jp[i][j])
+            time.sleep(ard.PUBLISH_TIME)
+
+    def _send_command_mp(self, receive_pos):
+        while True:
+            for i in range(len(self.arms)):
+                for j in range(self.arms[i].get_num_joints()):
+                    self.arms[i].set_joint_pos(j, receive_pos[i][j])
             time.sleep(ard.PUBLISH_TIME)
 
     def set_start_pos(self):
@@ -486,7 +496,7 @@ class ambf_raven:
         for i in range(increments):
             self.moved[0] = self.move_increment(0, i, increments)
             self.moved[1] = self.move_increment(1, i, increments)
-            time.sleep(0.001)
+            time.sleep(ard.COMMAND_TIME)
 
     def move_now(self, arm):
         """
