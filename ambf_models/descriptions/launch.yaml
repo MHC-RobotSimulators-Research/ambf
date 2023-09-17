@@ -28,3 +28,4 @@ multibody configs:
   - "./multi-bodies/environments/KnotEnv3/env.yaml" #21
   - "./multi-bodies/environments/TexturedGround/env.yaml" #22
   - "./multi-bodies/robots/blender-raven2-simple.yaml" #23
+  - "./multi-bodies/robots/blender-raven2-simple-sensors-actuators.yaml" #24
