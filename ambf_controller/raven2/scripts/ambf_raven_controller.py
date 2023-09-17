@@ -165,7 +165,8 @@ def do(raven, csvData, xbc, grasper,recorder=None):
             '''
             Homing Mode:
             '''
-            raven.go_home()
+            # raven.go_home()
+            raven.home_fast()
 
         while CONTROL[1]:
             '''
@@ -254,11 +255,11 @@ def do(raven, csvData, xbc, grasper,recorder=None):
                 if RECORDING:
                     recorder.write_raven_status(raven)
                 else:
-                    recorder.start_recording(RECORD_TO)
-                    recorder.write_raven_status(raven, True)
+                    recorder.record_raven_status()
+                    recorder.write_raven_status(raven)
                     RECORDING = True
             elif RECORDING:
-                recorder.stop_recording()
+                recorder.stop_recording(RECORD_TO)
                 RECORDING = False
 
             div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
@@ -391,11 +392,11 @@ def get_input(file_valid):
             CONTROL[4] = True
             userinput = input("Input key to switch control modes or input 'j' to begin recording\n")
         elif userinput == 'j' and CONTROL[4]:
-            RECORD_TO = input("Please enter filename to record to (example.csv): ")
             RECORD = True
             userinput = input("Now recording to csv, input 'k' to stop recording\n")
         elif userinput == 'k' and CONTROL[4] and RECORDING:
             RECORD = False
+            RECORD_TO = input("Please enter filename to record to (example.csv): ")
             userinput = input("Recording stopped, input key to switch control modes\n")
 
 
@@ -435,11 +436,11 @@ def main():
     #create recorder instance
     recorder = arr.ambf_raven_recorder()
     # create grasper instance
-
     grasper = arg.ambf_raven_grasping()
 
     # set raven man_steps
     raven.man_steps = 17
+
     # creates xbox controller object if there is a controller connected
     try:
         xbc = axc.XboxController()
@@ -447,7 +448,8 @@ def main():
         xbc = None
         print("No xbox controller detected\n"
               "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
-    # creates thread
+
+    # creates inputs thread
     get_inputs = th.Thread(target=get_input, args=(file_valid, ))
     # starts get_inputs thread
     get_inputs.start()
