@@ -297,6 +297,7 @@ def dhvalue_to_joint(dhvalue, gangle, arm):
                 joint[i] += 2 * m.pi
         else:
             joint[i] = dhvalue[i]
+    # print(joint)
     return apply_joint_limits(joint)
 
 def apply_joint_limits(joint):
