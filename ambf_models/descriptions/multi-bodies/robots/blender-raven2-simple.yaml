@@ -1084,7 +1084,7 @@ JOINT 0_link-base_link_L:
     low: -1.2
   enable feedback: false
   passive: false
-  controller output type: VELOCITY
+#  controller output type: VELOCITY
   type: fixed
   offset: -0.436
 JOINT base_link_L-link1_L:
@@ -1112,14 +1112,14 @@ JOINT base_link_L-link1_L:
     low: -3.142
   enable feedback: false
   passive: false
-  controller:
-    P: 600.0
-    I: 0.0
-    D: 0.06
-  controller output type: FORCE
+#  controller:
+#    P: 600.0
+#    I: 0.0
+#    D: 0.06
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
 JOINT link1_L-link2_L:
   name: link1_L-link2_L
   parent: BODY link1_L
@@ -1145,14 +1145,14 @@ JOINT link1_L-link2_L:
     low: -3.142
   enable feedback: false
   passive: false
-  controller:
-    P: 900.0
-    I: 0.0
-    D: 0.09
-  controller output type: FORCE
+#  controller:
+#    P: 900.0
+#    I: 0.0
+#    D: 0.09
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 1.559
 JOINT link2_L-link3_L:
   name: link2_L-link3_L
@@ -1179,14 +1179,14 @@ JOINT link2_L-link3_L:
     low: -0.17
   enable feedback: false
   passive: false
-  controller:
-    P: 350.0
-    I: 0.0
-    D: 0.035
-  controller output type: FORCE
+#  controller:
+#    P: 350.0
+#    I: 0.0
+#    D: 0.035
+#  controller output type: FORCE
   type: prismatic
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 0.922
 JOINT link3_L-instrument_shaft_L:
   name: link3_L-instrument_shaft_L
@@ -1210,14 +1210,14 @@ JOINT link3_L-instrument_shaft_L:
     z: 0.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.05
-    I: 0.0
-    D: 0.0003
-  controller output type: FORCE
+#  controller:
+#    P: 0.05
+#    I: 0.0
+#    D: 0.0003
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 1.656
 JOINT instrument_shaft_L-wrist_L:
   name: instrument_shaft_L-wrist_L
@@ -1244,14 +1244,14 @@ JOINT instrument_shaft_L-wrist_L:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.05
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.05
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 0.852
 JOINT wrist_L-grasper1_L:
   name: wrist_L-grasper1_L
@@ -1278,14 +1278,14 @@ JOINT wrist_L-grasper1_L:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.03
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.03
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: -0.00138
 JOINT wrist_L-grasper2_L:
   name: wrist_L-grasper2_L
@@ -1312,14 +1312,14 @@ JOINT wrist_L-grasper2_L:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.03
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.03
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 0.00138
 JOINT 0_link-base_link_R:
   name: 0_link-base_link_R
@@ -1346,7 +1346,7 @@ JOINT 0_link-base_link_R:
     low: -1.2
   enable feedback: false
   passive: false
-  controller output type: VELOCITY
+#  controller output type: VELOCITY
   type: fixed
   offset: 0.436
 JOINT base_link_R-link1_R:
@@ -1374,14 +1374,14 @@ JOINT base_link_R-link1_R:
     low: -3.142
   enable feedback: false
   passive: false
-  controller:
-    P: 600.0
-    I: 0.0
-    D: 0.06
-  controller output type: FORCE
+#  controller:
+#    P: 600.0
+#    I: 0.0
+#    D: 0.06
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
 JOINT link1_R-link2_R:
   name: link1_R-link2_R
   parent: BODY link1_R
@@ -1407,14 +1407,14 @@ JOINT link1_R-link2_R:
     low: -3.142
   enable feedback: false
   passive: false
-  controller:
-    P: 900.0
-    I: 0.0
-    D: 0.09
-  controller output type: FORCE
+#  controller:
+#    P: 900.0
+#    I: 0.0
+#    D: 0.09
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: -1.023
 JOINT link2_R-link3_R:
   name: link2_R-link3_R
@@ -1441,14 +1441,14 @@ JOINT link2_R-link3_R:
     low: -0.17
   enable feedback: false
   passive: false
-  controller:
-    P: 350.0
-    I: 0.0
-    D: 0.035
-  controller output type: FORCE
+#  controller:
+#    P: 350.0
+#    I: 0.0
+#    D: 0.035
+#  controller output type: FORCE
   type: prismatic
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: -1.266
 JOINT link3_R-instrument_shaft_R:
   name: link3_R-instrument_shaft_R
@@ -1472,14 +1472,14 @@ JOINT link3_R-instrument_shaft_R:
     z: -0.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.05
-    I: 0.0
-    D: 0.0003
-  controller output type: FORCE
+#  controller:
+#    P: 0.05
+#    I: 0.0
+#    D: 0.0003
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 1.032
 JOINT instrument_shaft_R-wrist_R:
   name: instrument_shaft_R-wrist_R
@@ -1506,14 +1506,14 @@ JOINT instrument_shaft_R-wrist_R:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.05
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.05
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 1.173
 JOINT wrist_R-grasper1_R:
   name: wrist_R-grasper1_R
@@ -1540,14 +1540,14 @@ JOINT wrist_R-grasper1_R:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.03
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.03
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: 3.13236
 JOINT wrist_R-grasper2_R:
   name: wrist_R-grasper2_R
@@ -1574,12 +1574,12 @@ JOINT wrist_R-grasper2_R:
     low: -2.0
   enable feedback: false
   passive: false
-  controller:
-    P: 0.03
-    I: 0.0
-    D: 3.0e-05
-  controller output type: FORCE
+#  controller:
+#    P: 0.03
+#    I: 0.0
+#    D: 3.0e-05
+#  controller output type: FORCE
   type: revolute
   max motor impulse: 0.05000000074505806
-  damping: 0.99
+  damping: 0.005
   offset: -3.14019
