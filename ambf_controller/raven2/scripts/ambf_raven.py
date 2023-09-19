@@ -359,11 +359,12 @@ class ambf_raven:
             home_dh (array) : array containing home position, or desired postion of the
                 joints not set by cartesian coordinates in inv_kinematics_p5
         """
-        curr_jp = np.array(self.arms[arm].get_all_joint_pos(), dtype="float")
+        # curr_jp = np.array(self.arms[arm].get_all_joint_pos(), dtype="float")
+        self.start_jp[arm] = self.next_jp[arm]
         if p5:
-            curr_tm = fk.fwd_kinematics_p5(arm, curr_jp)
+            curr_tm = fk.fwd_kinematics_p5(arm, self.start_jp[arm])
         else:
-            curr_tm = fk.fwd_kinematics(arm, curr_jp)
+            curr_tm = fk.fwd_kinematics(arm, self.start_jp[arm])
         # print("initial tm :", curr_tm)
         curr_tm[0, 3] += x
         curr_tm[1, 3] += y
@@ -417,9 +418,12 @@ class ambf_raven:
             arm (int) : 0 for the left arm and 1 for the right arm
         """
         # Calculate delta jp
-        for i in range(self.raven_joints):
-            self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
-            self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
+        # for i in range(self.raven_joints):
+        #     self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
+        #     self.delta_jp[arm][i] = self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i)
+
+        self.delta_jp[arm] = self.next_jp[arm] - self.start_jp[arm]
+
 
         # Find safe increment
         increment = self.delta_jp[arm] / ard.MAX_JR
@@ -475,7 +479,6 @@ class ambf_raven:
         else:
             self.moved[arm] = False
         return self.moved[arm]
-
 
     def move(self):
         """
