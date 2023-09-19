@@ -15,9 +15,9 @@ CAMERA_COUNT = 3
 RAVEN_JOINTS = 7
 RAVEN_ARMS   = 2
 RAVEN_IKSOLS = 8
-LOOP_RATE    = 1000
-PUBLISH_RATE = 1000
-COMMAND_RATE = 500
+LOOP_RATE    = 200
+PUBLISH_RATE = 200
+COMMAND_RATE = 200
 PUBLISH_TIME = 1 / PUBLISH_RATE
 COMMAND_TIME = 1 / COMMAND_RATE
 Eps          = sys.float_info.epsilon
@@ -29,7 +29,7 @@ HOME_DH            = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi
                                 [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                                 dtype="float")
 
-MAX_JR             = np.array([5*Deg2Rad, 5*Deg2Rad, 0.02, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad], dtype="float") / COMMAND_RATE
+MAX_JR             = np.array([5*Deg2Rad, 5*Deg2Rad, 0.02, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad, 15*Deg2Rad], dtype="float") / COMMAND_RATE * 2
 # MAX_JR             = np.array([0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000, 0.00500000], dtype="float")
 
 
