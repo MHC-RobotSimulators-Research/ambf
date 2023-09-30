@@ -10,6 +10,10 @@ class ambf_raven_recorder:
         self.file = None
 
     def build_rs_headers(self):
+        """
+        Creates an array of stings to be used as headers for raven state recording
+        """
+
         headers = ["time"]
 
         # Headers for jpos
@@ -86,12 +90,47 @@ class ambf_raven_recorder:
         return headers
 
     def record_raven_status(self):
+        """
+        Initializes the dataframe in a format matching the raven status rosbag recorder
+        """
         self.df = pd.DataFrame(columns=self.build_rs_headers())
         print("Now recording raven status")
 
     def write_raven_status(self, raven):
+        """
+        Writes the current raven status to the dataframe
+        """
         newline = raven.get_raven_status()
         self.df.loc[len(self.df.index)] = newline
 
+    def build_ci_headers(selfs):
+        """
+        Creates an array of strings to be used as headers for controller inputs recording
+        """
+
+        headers = ["time", "Left Joystick X", "Left Joystick Y", "Left Trigger", "Left Bumper",
+                   "Right Joystick X", "Right Joystick Y", "Right Trigger", "Right Bumper",
+                   "A Button", "B Button", "X Button", "Y Button", "Back Button", "Start Button"]
+
+        return headers
+
+    def record_controller_inputs(self):
+        """
+        Initializes the dataframe in a format for recording controller inputs
+        """
+        self.df = pd.DataFrame(columns=self.build_ci_headers())
+        print("Now recording controller inputs")
+
+    def write_controller_inputs(self, controller_inputs):
+        """
+        Writes the current controller inputs to the dataframe
+        """
+        self.df.loc[len(self.df.index)] = controller_inputs
+
     def stop_recording(self, filename="test.csv"):
+        """
+        Stops the recording by writing out the current dataframe a CSV to the specified file path
+        Args:
+            filename : the path to/filename of the csv to be saved
+        """
         self.df.to_csv(filename, encoding='utf-8')
