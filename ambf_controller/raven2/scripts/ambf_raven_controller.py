@@ -45,7 +45,13 @@ def control_reset():
 
 
 def update_pos_two_arm(dead_zone, controller, div):
-    # Coarse control of both raven arms
+    """
+    Generates position offsets for both arms using a xbox controller as input
+    Args:
+        dead_zone : the amount an analog stick must move before it is registered as an input
+        controller : and ambf_xbox_xontroller instance
+        div : the amount the raw input values will be divided by to produce cartesian offsets
+    """
 
     pos = [[0.0, 0.0],  # x - relative
            [0.0, 0.0],  # y - relative
@@ -77,7 +83,15 @@ def update_pos_two_arm(dead_zone, controller, div):
 
 
 def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
-
+    """
+    Generates position and grasper jpos offsets for one arm using a xbox controller as input
+    Args:
+        dead_zone : the amount an analog stick must move before it is registered as an input
+        controller : and ambf_xbox_xontroller instance
+        div : the amount the raw input values will be divided by to produce cartesian offsets
+        arm : which arm is being controlled
+        home_dh : the current dh values for the raven arms
+    """
     pos = [[0.0, 0.0],  # x - relative
            [0.0, 0.0],  # y - relative
            [0.0, 0.0],  # z - relative
@@ -124,6 +138,12 @@ def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
 
 
 def rumble_if_limited(raven, xbc):
+    """
+    Sends rumble command to controller when the commands ask raven to go out of bounds
+    (this currently does not work and causes errors after rumbling for a few seconds)
+    Args:
+        xbc : an ambf_xbox_controller instance
+    """
     rumble = [0.0, 0.0]
     for i in range(2):
         if raven.limited[i]:
