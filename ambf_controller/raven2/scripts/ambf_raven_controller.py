@@ -1,15 +1,16 @@
 import threading as th
 import sys
+import tty
+import termios
 import os
 import time
-from ambf_client import Client
 import math as m
 import numpy as np
 import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
-import ambf_xbox_controller_sim as axf
+import ambf_xbox_controller_fake as axf
 import ambf_raven_recorder as arr
 import raven_fk as fk
 import ambf_raven_grasping as arg
@@ -22,16 +23,21 @@ simulated environment
 '''
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
+# filedescriptors = termios.tcgetattr(sys.stdin)
+tty.setcbreak(sys.stdin)
 
-CONTROL = [False, False, False, False, False]  # Defines control mode in do
+CONTROL = [True, False, False, False, False, False]  # Defines control mode in do
 '''
-control[0] = homing
-control[1] = sine dance
-control[2] = quit
-control[3] = file mode
-control[4] = manual mode
+control[0] = Running
+control[1] = Homing Mode
+control[2] = Manual Control
+control[3] = File Mode: controller inputs
+control[4] = File Mode: jpos
+control[5] = Sine Dance
 '''
 DEADZONE = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
+DIV = 500  # amount raw input values are divided by to produce motion
+ALLOW_FAKE_CONTROLLER = True
 RECORD = False
 RECORDING = False
 RECORD_TO = ""
@@ -41,18 +47,19 @@ def control_reset():
     """
     resets all control values
     """
-    new_control = [False, False, False, False, False]
-    return new_control
+    global CONTROL
+    CONTROL = [True, False, False, False, False, False]
 
 
-def update_pos_two_arm(dead_zone, controller, div):
+def update_pos_two_arm(controller):
     """
     Generates position offsets for both arms using a xbox controller as input
     Args:
-        dead_zone : the amount an analog stick must move before it is registered as an input
-        controller : and ambf_xbox_xontroller instance
-        div : the amount the raw input values will be divided by to produce cartesian offsets
+        controller : an array of controller inputs
     """
+
+    global DEADZONE
+    global DIV
 
     pos = [[0.0, 0.0],  # x - relative
            [0.0, 0.0],  # y - relative
@@ -60,21 +67,21 @@ def update_pos_two_arm(dead_zone, controller, div):
            [0.0, 0.0]]  # gangle - absolute
 
     # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
-    if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
-        pos[2][0] = -controller[0][1] / div
+    if controller[0][3] == 1 and DEADZONE < abs(controller[0][1]):
+        pos[2][0] = -controller[0][1] / DIV
     else:
-        if dead_zone < abs(controller[0][0]):
-            pos[1][0] = -controller[0][0] / div
-        if dead_zone < abs(controller[0][1]):
-            pos[0][0] = -controller[0][1] / div
+        if DEADZONE < abs(controller[0][0]):
+            pos[1][0] = -controller[0][0] / DIV
+        if DEADZONE < abs(controller[0][1]):
+            pos[0][0] = -controller[0][1] / DIV
     # Update coordinates for right arm
-    if controller[1][3] == 1 and dead_zone < abs(controller[1][1]):
-        pos[2][1] = -controller[1][1] / div
+    if controller[1][3] == 1 and DEADZONE < abs(controller[1][1]):
+        pos[2][1] = -controller[1][1] / DIV
     else:
-        if dead_zone < abs(controller[1][0]):
-            pos[1][1] = -controller[1][0] / div
-        if dead_zone < abs(controller[1][1]):
-            pos[0][1] = -controller[1][1] / div
+        if DEADZONE < abs(controller[1][0]):
+            pos[1][1] = -controller[1][0] / DIV
+        if DEADZONE < abs(controller[1][1]):
+            pos[0][1] = -controller[1][1] / DIV
     # Set gripper angles
     pos[3][0] = 1 - (controller[0][2] / 4)
     # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
@@ -83,29 +90,31 @@ def update_pos_two_arm(dead_zone, controller, div):
     return pos
 
 
-def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
+def update_pos_one_arm(controller, arm, curr_dh):
     """
     Generates position and grasper jpos offsets for one arm using a xbox controller as input
     Args:
-        dead_zone : the amount an analog stick must move before it is registered as an input
-        controller : and ambf_xbox_xontroller instance
-        div : the amount the raw input values will be divided by to produce cartesian offsets
+        controller : an array of controller inputs
         arm : which arm is being controlled
-        home_dh : the current dh values for the raven arms
+        curr_dh : the current dh values for the raven arms
     """
+
+    global DEADZONE
+    global DIV
+
     pos = [[0.0, 0.0],  # x - relative
            [0.0, 0.0],  # y - relative
            [0.0, 0.0],  # z - relative
            [0.0, 0.0]]  # gangle - absolute
 
     # Cartesian control of desired arm
-    if controller[0][3] == 1 and dead_zone < abs(controller[0][1]):
-        pos[2][arm] = -controller[0][1] / div
+    if controller[0][3] == 1 and DEADZONE < abs(controller[0][1]):
+        pos[2][arm] = -controller[0][1] / DIV
     else:
-        if dead_zone < abs(controller[0][0]):
-            pos[1][arm] = -controller[0][0] / div
-        if dead_zone < abs(controller[0][1]):
-            pos[0][arm] = -controller[0][1] / div
+        if DEADZONE < abs(controller[0][0]):
+            pos[1][arm] = -controller[0][0] / DIV
+        if DEADZONE < abs(controller[0][1]):
+            pos[0][arm] = -controller[0][1] / DIV
 
     # Left arm
     if not arm:
@@ -113,13 +122,13 @@ def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
         pos[3][0] = 1 - (controller[1][2] / 4)
 
         # Set right j4
-        if dead_zone < abs(controller[1][0]):
-            if abs(home_dh[0][3] - controller[1][0] / 10) < m.pi:
-                home_dh[0][3] += -controller[1][0] / 10
+        if DEADZONE < abs(controller[1][0]):
+            if abs(curr_dh[0][3] - controller[1][0] / 10) < m.pi:
+                curr_dh[0][3] += -controller[1][0] / 10
         # Position j5
-        if dead_zone < abs(controller[1][1]):
-            if abs(home_dh[0][4] - controller[1][1] / 10) < 2:
-                home_dh[0][4] += -controller[1][1] / 10
+        if DEADZONE < abs(controller[1][1]):
+            if abs(curr_dh[0][4] - controller[1][1] / 10) < 2:
+                curr_dh[0][4] += -controller[1][1] / 10
 
     # Right arm
     else:
@@ -127,15 +136,15 @@ def update_pos_one_arm(dead_zone, controller, div, arm, home_dh):
         pos[3][1] = -1 + (controller[1][2] / 4)
 
         # Set right j4
-        if dead_zone < abs(controller[1][0]):
-            if abs(home_dh[1][3] + controller[1][0] / 10) < m.pi:
-                home_dh[1][3] += controller[1][0] / 10
+        if DEADZONE < abs(controller[1][0]):
+            if abs(curr_dh[1][3] + controller[1][0] / 10) < m.pi:
+                curr_dh[1][3] += controller[1][0] / 10
         # Position j5
-        if dead_zone < abs(controller[1][1]):
-            if abs(home_dh[1][4] + controller[1][1] / 10) < 2:
-                home_dh[1][4] += controller[1][1] / 10
+        if DEADZONE < abs(controller[1][1]):
+            if abs(curr_dh[1][4] + controller[1][1] / 10) < 2:
+                curr_dh[1][4] += controller[1][1] / 10
 
-    return pos, home_dh
+    return pos, curr_dh
 
 
 def rumble_if_limited(raven, xbc):
@@ -167,32 +176,149 @@ def do(raven, csvData, xbc, grasper, recorder=None):
     global RECORD
     global RECORDING
     global RECORD_TO
-    global DEADZONE
 
     # Sets which mode will be used in manual control
     arm_control = [True, True]
     # True for p5 ik and false for standard ik
     ik_mode = True
-    # DH values for home position of each arm
-    home_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
+    # Current DH values for each arm, defaults to home position
+    curr_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
                         [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                        dtype="float")
     curr_tm = None
 
-    while not CONTROL[2]:
+    while CONTROL[0]:
 
-        while CONTROL[0] and not any(raven.homed):  # if after homing, code breaks, needs assistance
+        while CONTROL[1]:  # if after homing, code breaks, needs assistance
             '''
             Homing Mode:
             '''
-            # raven.go_home()
             raven.home_fast()
+            control_reset()
 
-        while CONTROL[1]:
+        if CONTROL[2] and xbc is None:
+            print("No xbox controller detected\n"
+                  "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
+            CONTROL[4] = False
+
+        while CONTROL[2] and xbc is not None:
             '''
-            Sine Dance:
+            Manual Mode:
+            Manual control mode for the simulated raven2 using an xbox controller. There are two
+            modes. The first enables simultaneous control of both arms on the xyz axes, but locks
+            joints 4, 5, and 6 to their home positions. Accessed by simultaneously pressing back 
+            and start buttons.
+
+            Left stick: left arm x and y
+            Left trigger: left arm gripper open close
+            Left button: when pressed left stick up and down controls left arm z
+            Right stick: right arm x and y
+            Right trigger: right arm gripper open close
+            Right button: when pressed right stick up and down controls right arm z
+            A button: use p5 inverse kinematics
+            B button: use standard inverse kinematics
+
+            The second control mode only controls one arm at a time, but adds control of joints 4 and 5.
+            Accessed by pressing back for the left arm and start for the right arm.
+
+            Left stick: selected arm x and y
+            Left trigger: selected arm gripper open close
+            Left button: when pressed left stick up and down controls selected arm z
+            Right stick: controls grippers angle and rotation
+            X button: revert left arm gripper to its home position
+            Y button: revert right arm gripper to its home position
             '''
-            raven.sine_dance()
+            # Use recorded controller inputs or realtime controller inputs
+            if CONTROL[3]:
+                controller = xbc.read()
+            else:
+                controller = xbc.read()
+
+            # Record controller inputs and jpos
+            if RECORD:
+                if RECORDING:
+                    recorder.write_raven_status(raven)
+                    recorder.write_controller_inputs(controller)
+
+                else:
+                    recorder.record_raven_status()
+                    recorder.record_controller_inputs()
+                    recorder.write_raven_status(raven)
+                    recorder.write_controller_inputs(controller)
+                    RECORDING = True
+            elif RECORDING:
+                recorder.stop_recording(RECORD_TO)
+                RECORDING = False
+
+            if curr_tm is None:
+                curr_tm = [fk.fwd_kinematics_p5(0, np.array(raven.arms[0].get_all_joint_pos(), dtype="float")),
+                           fk.fwd_kinematics_p5(1, np.array(raven.arms[1].get_all_joint_pos(), dtype="float"))]
+
+            # Set which control mode to use
+            if controller[2][4] and controller[2][5]:
+                arm_control[0] = True
+                arm_control[1] = True
+                print("Controlling both arms")
+            elif controller[2][4]:
+                arm_control[0] = True
+                arm_control[1] = False
+                print("Controlling the left arm")
+            elif controller[2][5]:
+                arm_control[0] = False
+                arm_control[1] = True
+                print("Controlling the right arm")
+
+            # Set kinematics mode
+            if controller[2][0]:
+                ik_mode = True
+                print("Using p5 inverse kinematics")
+            elif controller[2][1]:
+                ik_mode = False
+                print("Using standard inverse kinematics")
+
+            # Home left gripper
+            if controller[2][2]:
+                curr_dh[0] = ard.HOME_DH[0]
+            # Home right gripper
+            if controller[2][3]:
+                curr_dh[1] = ard.HOME_DH[1]
+
+            # Control both raven arms
+            if arm_control[0] and arm_control[1]:
+                # modify position using controller inputs
+                pos = update_pos_two_arm(controller)
+                # Plan next move based off of modified cartesian coordinates
+                raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, curr_dh)
+                raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, curr_dh)
+
+                try:
+                    for i in range(2):
+                        grasper.set_grasp(i, controller[i][2])
+                        grasper.grasp_object(i)
+                except AttributeError:
+                    pass
+
+            # Control one raven arm
+            elif arm_control[0] or arm_control[1]:
+                # Decide which arm to control
+                arm = 0
+                if arm_control[1]:
+                    arm = 1
+                # modify position using controller inputs
+                pos, curr_dh = update_pos_one_arm(controller,arm, curr_dh)
+                # Plan new position based off of desired cartesian changes
+                raven.plan_move(arm, pos[0][arm], pos[1][arm], pos[2][arm], pos[3][arm], True, curr_dh)
+
+                try:
+                    grasper.set_grasp(arm, controller[1][2])
+                    grasper.grasp_object(arm)
+                except AttributeError:
+                    pass
+
+            # Incrementally move the simulated raven to the new planned position
+            raven.move()
+            # rumble the controller when raven is limited
+            rumble_if_limited(raven, xbc)
 
         while CONTROL[3] and not raven.finished:
             '''
@@ -237,135 +363,45 @@ def do(raven, csvData, xbc, grasper, recorder=None):
 
             recorder.stop_recording()
 
-        if CONTROL[4] and xbc is None:
-            print("No xbox controller detected\n"
-                  "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
-            CONTROL[4] = False
-
-        while CONTROL[4] and xbc is not None:
+        while CONTROL[4]:
             '''
-            Manual Mode:
-            Manual control mode for the simulated raven2 using an xbox controller. There are two
-            modes. The first enables simultaneous control of both arms on the xyz axes, but locks
-            joints 4, 5, and 6 to their home positions. Accessed by simultaneously pressing back 
-            and start buttons.
-            
-            Left stick: left arm x and y
-            Left trigger: left arm gripper open close
-            Left button: when pressed left stick up and down controls left arm z
-            Right stick: right arm x and y
-            Right trigger: right arm gripper open close
-            Right button: when pressed right stick up and down controls right arm z
-            A button: use p5 inverse kinematics
-            B button: use standard inverse kinematics
-            
-            The second control mode only controls one arm at a time, but adds control of joints 4 and 5.
-            Accessed by pressing back for the left arm and start for the right arm.
-            
-            Left stick: selected arm x and y
-            Left trigger: selected arm gripper open close
-            Left button: when pressed left stick up and down controls selected arm z
-            Right stick: controls grippers angle and rotation
-            X button: revert left arm gripper to its home position
-            Y button: revert right arm gripper to its home position
+            Sine Dance:
             '''
-
-            div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
-            dead_zone = DEADZONE
-            controller = xbc.read()
-
-            # Recorder
-            if RECORD:
-                if RECORDING:
-                    recorder.write_raven_status(raven)
-                    recorder.write_controller_inputs(controller)
-
-                else:
-                    recorder.record_raven_status()
-                    recorder.record_controller_inputs()
-                    recorder.write_raven_status(raven)
-                    recorder.write_controller_inputs(controller)
-                    RECORDING = True
-            elif RECORDING:
-                recorder.stop_recording(RECORD_TO)
-                RECORDING = False
-
-            if curr_tm is None:
-                curr_tm = [fk.fwd_kinematics_p5(0, np.array(raven.arms[0].get_all_joint_pos(), dtype="float")),
-                           fk.fwd_kinematics_p5(1, np.array(raven.arms[1].get_all_joint_pos(), dtype="float"))]
-
-            # Set which control mode to use
-            if controller[2][4] and controller[2][5]:
-                arm_control[0] = True
-                arm_control[1] = True
-                print("Controlling both arms")
-            elif controller[2][4]:
-                arm_control[0] = True
-                arm_control[1] = False
-                print("Controlling the left arm")
-            elif controller[2][5]:
-                arm_control[0] = False
-                arm_control[1] = True
-                print("Controlling the right arm")
-
-            # Set kinematics mode
-            if controller[2][0]:
-                ik_mode = True
-                print("Using p5 inverse kinematics")
-            elif controller[2][1]:
-                ik_mode = False
-                print("Using standard inverse kinematics")
-
-            # Home left gripper
-            if controller[2][2]:
-                home_dh[0] = ard.HOME_DH[0]
-            # Home right gripper
-            if controller[2][3]:
-                home_dh[1] = ard.HOME_DH[1]
-
-            # Control both raven arms
-            if arm_control[0] and arm_control[1]:
-                # modify position using controller inputs
-                pos = update_pos_two_arm(dead_zone, controller, div)
-                # Plan next move based off of modified cartesian coordinates
-                raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, home_dh)
-                raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, home_dh)
-
-                try:
-                    for i in range(2):
-                        grasper.set_grasp(i, controller[i][2])
-                        grasper.grasp_object(i)
-                except AttributeError:
-                    pass
-
-            # Control one raven arm
-            elif arm_control[0] or arm_control[1]:
-                # Decide which arm to control
-                arm = 0
-                if arm_control[1]:
-                    arm = 1
-                # modify position using controller inputs
-                pos, home_dh = update_pos_one_arm(dead_zone, controller, div, arm, home_dh)
-                # Plan new position based off of desired cartesian changes
-                raven.plan_move(arm, pos[0][arm], pos[1][arm], pos[2][arm], pos[3][arm], True, home_dh)
-
-                try:
-                    grasper.set_grasp(arm, controller[1][2])
-                    grasper.grasp_object(arm)
-                except AttributeError:
-                    pass
-
-            # Incrementally move the simulated raven to the new planned position
-            raven.move()
-            # rumble the controller when raven is limited
-            rumble_if_limited(raven, xbc)
+            raven.sine_dance()
 
     print("shutting down...\n")
     os.system('kill %d' % os.getpid())
     exit(0)
 
 
-def get_input(file_valid):
+def print_menu():
+    print("\nPlease select a mode:\n"
+          "1. Homing Mode: return raven to its home position\n"
+          "2. Manual Control: use an xbox controller to control raven\n"
+          "3. File Controller Inputs: motion from a csv containing recorded controller inputs\n"
+          "3. File jpos: motion from a csv containing recorded jpos\n"
+          "4. Sine Dance: do a little dance :)\n"
+          "0. Quit\n")
+
+
+def check_record():
+    global RECORD
+    global RECORD_TO
+    while True:
+        userinput = sys.stdin.read(1)[0]
+        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+        if userinput == 'y':
+            RECORD_TO = input("please enter a filename to record to, ex: 'test'\n")
+            RECORD = True
+            print("Recording started, press 's' to stop")
+            break
+        elif userinput == 'n':
+            RECORD = False
+            print("Not Recording")
+            break
+
+
+def _get_input():
     """
     continuously loops to collect new inputs from user in order to switch
     control modes
@@ -374,55 +410,66 @@ def get_input(file_valid):
     global RECORD
     global RECORD_TO
 
-    print("Input Menu:\n")
-    print("input 'h' for home")
-    print("input 's' for sine dance")
+    print_menu()
 
-    if file_valid:
-        print("input 'f' for motion from file")
-        print("input 'r' for motion from file with recording")
-    print("input 'm' for manual mode")
-    print("input 'q' for quit\n")
-    print("Please select a control mode:")
-    userinput = input()
-    while not CONTROL[2]:
-        print("Switching control modes...\n")
-        if userinput == 'h':
-            CONTROL = control_reset()
-            print("homing...")
-            CONTROL[0] = True
-            userinput = input("Input key to switch control modes\n")
+    while CONTROL[0]:
+
+        # get last key pressed
+        userinput = sys.stdin.read(1)[0]
+        termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+
+        # select mode
+        if userinput == '0':
+            control_reset()
+            CONTROL[0] = False
+            print("Quitting...")
             continue
-        elif userinput == 's':
-            CONTROL = control_reset()
-            print("doing sine dance...")
+        if userinput == '1':
+            control_reset()
             CONTROL[1] = True
-            userinput = input("Input key to switch control modes\n")
+            print("Homing Mode selected\n"
+                  "Press a key to switch modes or press 'm' to show the menu\n")
             continue
-        elif userinput == 'q':
-            CONTROL = control_reset()
+        elif userinput == '2':
+            control_reset()
             CONTROL[2] = True
-        elif userinput == 'f' and file_valid:
-            CONTROL = control_reset()
+            print("Manual Control selected\n"
+                  "Press 'r' to begin recording, press a key to switch modes, or press 'm' to show the menu\n")
+            continue
+        elif userinput == '3':
+            control_reset()
+            CONTROL[2] = True
             CONTROL[3] = True
-            userinput = input("Input key to switch control modes\n")
-        elif userinput == 'r' and file_valid:
-            RECORD_TO = input("Please enter filename to record to (example.csv): ")
-            CONTROL = control_reset()
-            CONTROL[3] = True
-            RECORD = True
-            userinput = input("Input key to switch control modes\n")
-        elif userinput == 'm':
-            CONTROL = control_reset()
+            print("File Controller Inputs selected\n"
+                  "Would you like to record y/n?\n")
+            check_record()
+            continue
+        elif userinput == '4':
+            control_reset()
             CONTROL[4] = True
-            userinput = input("Input key to switch control modes or input 'j' to begin recording\n")
-        elif userinput == 'j' and CONTROL[4]:
-            RECORD_TO = input("Please enter filename to record to (example.csv): ")
+            print("File jpos selected\n"
+                  "Would you like to record y/n?\n")
+            check_record()
+            continue
+        elif userinput == '5':
+            control_reset()
+            CONTROL[5] = True
+            print("Sine Dance selected\n"
+                  "Press a key to switch modes or press 'm' to show the menu\n")
+            continue
+        elif userinput == 'm':
+            print_menu()
+            continue
+
+        # control recording
+        elif userinput == 'r' and CONTROL[2]:
+            RECORD_TO = input("Please enter a filename to record to, ex: 'test'\n")
             RECORD = True
-            userinput = input("Now recording to csv, input 'k' to stop recording\n")
-        elif userinput == 'k' and CONTROL[4] and RECORDING:
+            print("Recording started, press 's' to stop")
+        elif userinput == 's' and CONTROL[2]:
             RECORD = False
-            userinput = input("Recording stopped, input key to switch control modes\n")
+            print("Recording stopped\n"
+                  "Press a key to switch modes or press 'm' to show the menu")
 
 
 def file_loader():
@@ -454,6 +501,9 @@ def main():
     runs the controller by initializing a thread to collect user inputs and
     calling the do() method to move the robot according to what the user inputs
     """
+
+    global ALLOW_FAKE_CONTROLLER
+
     # load external raven trajectory file
     file_valid, csvData = file_loader()
     # creates raven object
@@ -470,13 +520,15 @@ def main():
     try:
         xbc = axc.XboxController()
     except IndexError:
-        # xbc = None
-        # print("No xbox controller detected\n"
-        #       "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
-        xbc = axf.ambf_xbox_controller_fake()
+        if ALLOW_FAKE_CONTROLLER:
+            xbc = axf.ambf_xbox_controller_fake()
+        else:
+            xbc = None
+            print("No xbox controller detected\n"
+                  "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
 
     # creates inputs thread
-    get_inputs = th.Thread(target=get_input, args=(file_valid, ))
+    get_inputs = th.Thread(target=_get_input, args=(), daemon=True)
     # starts get_inputs thread
     get_inputs.start()
     do(raven, csvData, xbc, grasper, recorder)
