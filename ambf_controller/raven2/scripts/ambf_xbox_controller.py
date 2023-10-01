@@ -9,6 +9,7 @@ import threading
 
 class XboxController(object):
     """
+    Author: Natalie Chalfant
     Gets the state of xbox controller inputs using the inputs library. Modified from
     https://stackoverflow.com/questions/46506850/how-can-i-get-input-from-an-xbox-one-controller-in-python
     """
