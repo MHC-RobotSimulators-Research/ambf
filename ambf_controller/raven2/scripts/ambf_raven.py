@@ -7,8 +7,6 @@ import utilities as u
 import numpy as np
 import ambf_raven_def as ard
 import timeit
-import threading as th
-import multiprocessing as mp
 
 
 '''
@@ -37,7 +35,6 @@ class ambf_raven:
         self.delta_jp = np.zeros((2, 7))
         self.home_joints = ard.HOME_JOINTS
         self.next_jp = np.zeros((2, 7))
-        self.send_jp = np.zeros((2, 7))
         self.dance_scale_joints = ard.DANCE_SCALE_JOINTS
         self.loop_rate = ard.LOOP_RATE
         self.raven_joints = ard.RAVEN_JOINTS
@@ -49,95 +46,22 @@ class ambf_raven:
         self.finished = False
         self.man_steps = 30
 
-        self.set_start_pos()
-        self._sender = th.Thread(target=self._send_command, args=(), daemon=True)
-        self._sender.start()
-
-        self.receive_pos, self.send_pos = mp.Pipe(False)
-
-    def _send_command(self):
-        while True:
-            for i in range(len(self.arms)):
-                for j in range(self.arms[i].get_num_joints()):
-                    self.arms[i].set_joint_pos(j, self.send_jp[i][j])
-            time.sleep(ard.PUBLISH_TIME)
-
-    def _send_command_mp(self, receive_pos):
-        while True:
-            for i in range(len(self.arms)):
-                for j in range(self.arms[i].get_num_joints()):
-                    self.arms[i].set_joint_pos(j, receive_pos[i][j])
-            time.sleep(ard.PUBLISH_TIME)
-
-    def set_start_pos(self):
-        for i in range(len(self.arms)):
-            for j in range(self.arms[i].get_num_joints()):
-                self.start_jp[i][j] = self.arms[i].get_joint_pos(j)
+        print("\nHoming...\n")
+        self.home_fast()
 
     def home_fast(self):
-        max_attempts = 3
 
-        for i in range(max_attempts):
-            if not any(self.homed):
-                self.next_jp = [self.home_joints, self.home_joints]
-                self.move()
+        self.next_jp = [self.home_joints, self.home_joints]
+        self.move()
 
-                for j in range(len(self.moved)):
-                    self.homed[j] = self.moved[j]
+        for j in range(len(self.moved)):
+            self.homed[j] = self.moved[j]
 
-                if all(self.homed):
-                    print("Raven is homed!")
-
-        if not all(self.homed):
-            print("Raven could not be homed, please restart the controller :(")
-
-    def go_home(self):
-        """
-        uses the helper function go_home_increment to move raven to its home position
-        """
-        for i in range(self.loop_rate):
-            if not i:
-                print("starting homing")
-                # moves raven incrementally towards home position, if home position is reached, returns True
-                self.homed[0] = self.go_home_increment(1, 1, i)
-                self.homed[1] = self.go_home_increment(1, 0, i)
-            else:
-                self.homed[0] = self.go_home_increment(0, 1, i)
-                self.homed[1] = self.go_home_increment(0, 0, i)
-            time.sleep(0.01)
-        if self.homed[0] and self.homed[1]:
+        if all(self.homed):
             print("Raven is homed!")
 
-    def go_home_increment(self, first_entry, arm, count):
-        """
-        first entry --> bool
-        arm --> bool (0 for left, 1 for right)
-        count --> int
-        """
-        # if first time calling go home
-        if first_entry:
-            for i in range(self.arms[arm].get_num_joints()):
-                self.start_jp[arm][i] = self.arms[arm].get_joint_pos(i)
-                self.delta_jp[arm][i] = self.home_joints[i] - self.arms[arm].get_joint_pos(i)
-        # gradualizes movement from a to b
-        scale = min(1.0 * count / self.loop_rate, 1.0)
-        # array containing distance to go to start point
-        diff_jp = [0, 0, 0, 0, 0, 0, 0]
-
-        # sets position for each joint
-        for i in range(self.arms[arm].get_num_joints()):
-            self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
-            diff_jp[i] = abs(self.home_joints[i] - self.arms[arm].get_joint_pos(i))
-        # in progress, indicates when arm is honed
-
-        max_value = np.max(diff_jp)
-
-        if max_value < 0.1:
-            self.homed[arm] = True
-
-        else:
-            self.homed[arm] = False
-        return self.homed[arm]
+        if not all(self.homed):
+            print("Raven could not be homed, please try again :(")
 
     def sine_dance(self):
         if self.i == 0:
@@ -170,7 +94,10 @@ class ambf_raven:
 
         # Add jpos for both arms
         for i in range(len(self.arms)):
-            status.extend(self.arms[i].get_all_joint_pos().insert(3, 0))  # 7 numbers
+            jpos = self.arms[i].get_all_joint_pos()
+            jpos.insert(3, 0)
+            status.extend(jpos)
+            # status.extend(self.arms[i].get_all_joint_pos().insert(3, 0))  # 7 numbers
 
         # Placeholders for runlevel, sublevel, and last_seq
         for i in range(3):
@@ -218,7 +145,9 @@ class ambf_raven:
 
         # Add jvel for both arms
         for i in range(len(self.arms)):
-            status.extend(self.arms[i].get_all_joint_vel().insert(3, 0))  # 7 numbers
+            jvel = self.arms[i].get_all_joint_vel()
+            jvel.insert(3, 0)
+            status.extend(jvel)  # 7 numbers
 
         # Placeholders for jpos_d
         for i in range(16):
@@ -241,40 +170,6 @@ class ambf_raven:
             status.append(float("nan"))
 
         return status
-
-    # def get_raven_status(self, time_now, first_entry=False):
-    #     if first_entry:
-    #         status = ["time"]
-    #         for arm in range(2):
-    #             for j in range(7):
-    #                 status.append("jpos" + str(arm * 7 + j))
-    #             for j in range(7):
-    #                 status.append("jvel" + str(arm * 7 + j))
-    #             link_names = self.arms[arm].get_children_names()
-    #             for pre in ["_pos", "_apos", "_vel", "_avel"]:
-    #                 for j in range(self.arms[arm].get_num_of_children()):
-    #                     status.append(link_names[j] + pre + "x")
-    #                     status.append(link_names[j] + pre + "y")
-    #                     status.append(link_names[j] + pre + "z")
-    #         return status
-    #     else:
-    #         status = [time_now]
-    #         for arm in range(2):
-    #             status.extend(self.arms[arm].get_all_joint_pos())  # 7 numbers
-    #             status.extend(self.arms[arm].get_all_joint_vel())  # 7 numbers
-    #             # status.extend(self.arms[arm].get_all_joint_effort()) # 7 numbers
-    #
-    #             link_names = self.arms[arm].get_children_names()
-    #             for j in range(self.arms[arm].get_num_of_children()):
-    #                 curr_link = self._client.get_obj_handle('raven_2/' + link_names[j])
-    #                 status.extend(curr_link.get_pose())  # 6 numbers
-    #                 vel = curr_link.get_linear_vel()
-    #                 avel = curr_link.get_angular_vel()
-    #                 status.extend([vel.x, vel.y, vel.z, avel.x, avel.y, avel.z])  # 6 numbers
-    #             # frc = self.arms[arm].get_force_command()
-    #             # trq = self.arms[arm].get_torque_command()
-    #             # status.extend([frc.x, frc.y, frc.z, trq.x, trq.y, trq.z])    # 6 numbers
-    #         return status
 
     def set_raven_pos(self, pos_list):
         """
@@ -430,30 +325,6 @@ class ambf_raven:
         # print("increments: ", increment)
         return max(map(abs, increment)) + 1
 
-    # def move_increment(self, arm, count, increments):
-    #     """
-    #     slowly increment the robot's position until it reaches the desired
-    #     inputted position. uses a similar method structure to home
-    #     """
-    #     scale = min(1.0 * count / increments, 1.0)
-    #     # array containing distance to go to start point
-    #     diff_jp = [0, 0, 0, 0, 0, 0, 0]
-    #
-    #     # sets position for each joint
-    #     for i in range(self.arms[arm].get_num_joints()):
-    #         self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
-    #         diff_jp[i] = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
-    #
-    #     # in progress, indicates when arm has reached next_jp
-    #     max_value = np.max(diff_jp)
-    #
-    #     if max_value < 0.1 or self.limited[arm]:
-    #         self.moved[arm] = True
-    #
-    #     else:
-    #         self.moved[arm] = False
-    #     return self.moved[arm]
-
     def move_increment(self, arm, count, increments):
         """
         slowly increment the robot's position until it reaches the desired
@@ -464,11 +335,9 @@ class ambf_raven:
         diff_jp = [0, 0, 0, 0, 0, 0, 0]
 
         # sets position for each joint
-
-        self.send_jp[arm] =  scale * self.delta_jp[arm] + self.start_jp[arm]
-
         for i in range(self.arms[arm].get_num_joints()):
-            diff_jp = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
+            self.arms[arm].set_joint_pos(i, scale * self.delta_jp[arm][i] + self.start_jp[arm][i])
+            diff_jp[i] = abs(self.next_jp[arm][i] - self.arms[arm].get_joint_pos(i))
 
         # in progress, indicates when arm has reached next_jp
         max_value = np.max(diff_jp)
