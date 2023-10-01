@@ -28,13 +28,3 @@ class ambf_xbox_controller_fake:
 
     def rumble(self):
         pass
-
-# def main():
-#     test = ambf_xbox_controller_fake()
-#     while True:
-#         print(test.sin_output())
-#         time.sleep(0.017)
-#
-#
-# if __name__ == '__main__':
-#     main()
