@@ -12,6 +12,7 @@ import ambf_raven_def as ard
 import ambf_xbox_controller as axc
 import ambf_xbox_controller_fake as axf
 import ambf_raven_recorder as arr
+import ambf_raven_reader as arc
 import raven_fk as fk
 import ambf_raven_grasping as arg
 
@@ -23,7 +24,7 @@ simulated environment
 '''
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
-# filedescriptors = termios.tcgetattr(sys.stdin)
+FILE_DESCRIPTORS = termios.tcgetattr(sys.stdin)
 tty.setcbreak(sys.stdin)
 
 CONTROL = [True, False, False, False, False, False]  # Defines control mode in do
@@ -40,7 +41,8 @@ DIV = 500  # amount raw input values are divided by to produce motion
 ALLOW_FAKE_CONTROLLER = True
 RECORD = False
 RECORDING = False
-RECORD_TO = ""
+FILE_OUT = ""
+FILE_IN = ""
 
 
 def control_reset():
@@ -162,20 +164,20 @@ def rumble_if_limited(raven, xbc):
         xbc.rumble(rumble[0], rumble[1], 100)
 
 
-def do(raven, csvData, xbc, grasper, recorder=None):
+def do(raven, xbc, grasper, recorder=None, reader=None):
     """
     performs the main actions of the robot based on the values
     in the control array
 
     Args:
         raven : an ambf_raven instance
-        csvData : an array containing data from csv
         xbc : an ambf_xbox_controller instance
+        grasper : an ambf_raven_grasping instance
     """
     global CONTROL
     global RECORD
     global RECORDING
-    global RECORD_TO
+    global FILE_OUT
 
     # Sets which mode will be used in manual control
     arm_control = [True, True]
@@ -230,9 +232,33 @@ def do(raven, csvData, xbc, grasper, recorder=None):
             '''
             # Use recorded controller inputs or realtime controller inputs
             if CONTROL[3]:
-                controller = xbc.read()
+                if reader.get_status():
+                    controller = reader.read_ci()
+                    # If that was the last line of the CSV
+                    if not reader.get_status():
+                        control_reset()
+                        print("Reached the end of ", FILE_IN)
+                        if RECORDING:
+                            recorder.stop_recording(FILE_OUT)
+                            RECORD = False
+                            RECORDING = False
+                        break
+                else:
+                    if reader.load_csv(FILE_IN, "controller"):
+                        time.sleep(1)
+                        controller = reader.read_ci()
+                    else:
+                        print(FILE_IN, " did not match expected shape")
+                        control_reset()
+                        break
             else:
                 controller = xbc.read()
+
+            # catch the occasional error where controller is None
+            if controller is None:
+                print("Something went wrong, please try again")
+                control_reset()
+                break
 
             # Record controller inputs and jpos
             if RECORD:
@@ -247,7 +273,7 @@ def do(raven, csvData, xbc, grasper, recorder=None):
                     recorder.write_controller_inputs(controller)
                     RECORDING = True
             elif RECORDING:
-                recorder.stop_recording(RECORD_TO)
+                recorder.stop_recording(FILE_OUT)
                 RECORDING = False
 
             if curr_tm is None:
@@ -320,7 +346,7 @@ def do(raven, csvData, xbc, grasper, recorder=None):
             # rumble the controller when raven is limited
             rumble_if_limited(raven, xbc)
 
-        while CONTROL[3] and not raven.finished:
+        while CONTROL[3] and not CONTROL[2]:
             '''
             File Mode:
             moves raven along a trajectory defined by a .csv function with 7 columns for each
@@ -345,7 +371,7 @@ def do(raven, csvData, xbc, grasper, recorder=None):
             # else:
 
             if RECORD:
-                recorder.start_recording(RECORD_TO)
+                recorder.start_recording(FILE_OUT)
                 recorder.write_raven_status(raven, True)
 
             start = time.time()
@@ -379,19 +405,39 @@ def print_menu():
           "1. Homing Mode: return raven to its home position\n"
           "2. Manual Control: use an xbox controller to control raven\n"
           "3. File Controller Inputs: motion from a csv containing recorded controller inputs\n"
-          "3. File jpos: motion from a csv containing recorded jpos\n"
-          "4. Sine Dance: do a little dance :)\n"
+          "4. File jpos: motion from a csv containing recorded jpos\n"
+          "5. Sine Dance: do a little dance :)\n"
           "0. Quit\n")
+
+
+def set_file_out():
+
+    global FILE_OUT
+    global FILE_DESCRIPTORS
+
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, FILE_DESCRIPTORS)
+    FILE_OUT = input("Please enter a filename to record to, ex: 'test'\n")
+    tty.setcbreak(sys.stdin)
+
+
+def set_file_in():
+    global FILE_IN
+    global FILE_DESCRIPTORS
+
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, FILE_DESCRIPTORS)
+    FILE_IN = input("Please enter the file you like to load\n")
+    tty.setcbreak(sys.stdin)
 
 
 def check_record():
     global RECORD
-    global RECORD_TO
+    global FILE_OUT
+    print("Would you like to record y/n?\n")
     while True:
         userinput = sys.stdin.read(1)[0]
         termios.tcflush(sys.stdin, termios.TCIOFLUSH)
         if userinput == 'y':
-            RECORD_TO = input("please enter a filename to record to, ex: 'test'\n")
+            set_file_out()
             RECORD = True
             print("Recording started, press 's' to stop")
             break
@@ -408,7 +454,8 @@ def _get_input():
     """
     global CONTROL
     global RECORD
-    global RECORD_TO
+    global FILE_OUT
+    global FILE_IN
 
     print_menu()
 
@@ -438,18 +485,18 @@ def _get_input():
             continue
         elif userinput == '3':
             control_reset()
+            print("File Controller Inputs selected\n")
+            set_file_in()
+            check_record()
             CONTROL[2] = True
             CONTROL[3] = True
-            print("File Controller Inputs selected\n"
-                  "Would you like to record y/n?\n")
-            check_record()
             continue
         elif userinput == '4':
             control_reset()
-            CONTROL[4] = True
-            print("File jpos selected\n"
-                  "Would you like to record y/n?\n")
+            print("File jpos selected\n")
+            set_file_in()
             check_record()
+            CONTROL[4] = True
             continue
         elif userinput == '5':
             control_reset()
@@ -463,7 +510,7 @@ def _get_input():
 
         # control recording
         elif userinput == 'r' and CONTROL[2]:
-            RECORD_TO = input("Please enter a filename to record to, ex: 'test'\n")
+            set_file_out()
             RECORD = True
             print("Recording started, press 's' to stop")
         elif userinput == 's' and CONTROL[2]:
@@ -508,8 +555,10 @@ def main():
     file_valid, csvData = file_loader()
     # creates raven object
     raven = arav.ambf_raven()
-    #create recorder instance
+    # create recorder instance
     recorder = arr.ambf_raven_recorder()
+    # create reader instance
+    reader = arc.ambf_raven_reader()
     # create grasper instance
     grasper = arg.ambf_raven_grasping()
 
@@ -531,7 +580,7 @@ def main():
     get_inputs = th.Thread(target=_get_input, args=(), daemon=True)
     # starts get_inputs thread
     get_inputs.start()
-    do(raven, csvData, xbc, grasper, recorder)
+    do(raven, xbc, grasper, recorder, reader)
     get_inputs.join()
 
 
