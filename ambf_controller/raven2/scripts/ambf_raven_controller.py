@@ -9,6 +9,7 @@ import ambf_raven as arav
 import csv
 import ambf_raven_def as ard
 import ambf_xbox_controller as axc
+import ambf_xbox_controller_sim as axf
 import ambf_raven_recorder as arr
 import raven_fk as fk
 import ambf_raven_grasping as arg
@@ -22,7 +23,6 @@ simulated environment
 
 sys.path.insert(0, 'ambf/ambf_ros_modules/ambf_client/python/ambf_client')
 
-DEADZONE = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
 CONTROL = [False, False, False, False, False]  # Defines control mode in do
 '''
 control[0] = homing
@@ -31,6 +31,7 @@ control[2] = quit
 control[3] = file mode
 control[4] = manual mode
 '''
+DEADZONE = 0.1  # controller axes must move beyond this before they register as an input, prevents drift
 RECORD = False
 RECORDING = False
 RECORD_TO = ""
@@ -152,13 +153,12 @@ def rumble_if_limited(raven, xbc):
         xbc.rumble(rumble[0], rumble[1], 100)
 
 
-def do(raven, csvData, xbc, grasper,recorder=None):
+def do(raven, csvData, xbc, grasper, recorder=None):
     """
     performs the main actions of the robot based on the values
     in the control array
 
     Args:
-        q : a multiprocessing queue
         raven : an ambf_raven instance
         csvData : an array containing data from csv
         xbc : an ambf_xbox_controller instance
@@ -270,22 +270,25 @@ def do(raven, csvData, xbc, grasper,recorder=None):
             Y button: revert right arm gripper to its home position
             '''
 
+            div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
+            dead_zone = DEADZONE
+            controller = xbc.read()
+
             # Recorder
             if RECORD:
                 if RECORDING:
                     recorder.write_raven_status(raven)
+                    recorder.write_controller_inputs(controller)
+
                 else:
                     recorder.record_raven_status()
+                    recorder.record_controller_inputs()
                     recorder.write_raven_status(raven)
+                    recorder.write_controller_inputs(controller)
                     RECORDING = True
             elif RECORDING:
                 recorder.stop_recording(RECORD_TO)
                 RECORDING = False
-
-            div = 500   # how much the raw input values will be divided by to produce the change in x,y,z
-            dead_zone = DEADZONE
-
-            controller = xbc.read()
 
             if curr_tm is None:
                 curr_tm = [fk.fwd_kinematics_p5(0, np.array(raven.arms[0].get_all_joint_pos(), dtype="float")),
@@ -370,9 +373,11 @@ def get_input(file_valid):
     global CONTROL
     global RECORD
     global RECORD_TO
+
     print("Input Menu:\n")
     print("input 'h' for home")
     print("input 's' for sine dance")
+
     if file_valid:
         print("input 'f' for motion from file")
         print("input 'r' for motion from file with recording")
@@ -412,11 +417,11 @@ def get_input(file_valid):
             CONTROL[4] = True
             userinput = input("Input key to switch control modes or input 'j' to begin recording\n")
         elif userinput == 'j' and CONTROL[4]:
+            RECORD_TO = input("Please enter filename to record to (example.csv): ")
             RECORD = True
             userinput = input("Now recording to csv, input 'k' to stop recording\n")
         elif userinput == 'k' and CONTROL[4] and RECORDING:
             RECORD = False
-            RECORD_TO = input("Please enter filename to record to (example.csv): ")
             userinput = input("Recording stopped, input key to switch control modes\n")
 
 
@@ -465,9 +470,10 @@ def main():
     try:
         xbc = axc.XboxController()
     except IndexError:
-        xbc = None
-        print("No xbox controller detected\n"
-              "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
+        # xbc = None
+        # print("No xbox controller detected\n"
+        #       "Please connect a xbox controller and re-run the python controller if you want to use manual mode")
+        xbc = axf.ambf_xbox_controller_fake()
 
     # creates inputs thread
     get_inputs = th.Thread(target=get_input, args=(file_valid, ))
