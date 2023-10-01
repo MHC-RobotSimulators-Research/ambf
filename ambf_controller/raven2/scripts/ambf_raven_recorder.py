@@ -1,11 +1,11 @@
-import csv
 import pandas as pd
 
 
 class ambf_raven_recorder:
 
     def __init__(self):
-        self.df = None
+        self.rs_df = None
+        self.ci_df = None
         self.writer = None
         self.file = None
 
@@ -93,7 +93,7 @@ class ambf_raven_recorder:
         """
         Initializes the dataframe in a format matching the raven status rosbag recorder
         """
-        self.df = pd.DataFrame(columns=self.build_rs_headers())
+        self.rs_df = pd.DataFrame(columns=self.build_rs_headers())
         print("Now recording raven status")
 
     def write_raven_status(self, raven):
@@ -101,14 +101,14 @@ class ambf_raven_recorder:
         Writes the current raven status to the dataframe
         """
         newline = raven.get_raven_status()
-        self.df.loc[len(self.df.index)] = newline
+        self.rs_df.loc[len(self.rs_df.index)] = newline
 
-    def build_ci_headers(selfs):
+    def build_ci_headers(self):
         """
         Creates an array of strings to be used as headers for controller inputs recording
         """
 
-        headers = ["time", "Left Joystick X", "Left Joystick Y", "Left Trigger", "Left Bumper",
+        headers = ["Left Joystick X", "Left Joystick Y", "Left Trigger", "Left Bumper",
                    "Right Joystick X", "Right Joystick Y", "Right Trigger", "Right Bumper",
                    "A Button", "B Button", "X Button", "Y Button", "Back Button", "Start Button"]
 
@@ -118,19 +118,32 @@ class ambf_raven_recorder:
         """
         Initializes the dataframe in a format for recording controller inputs
         """
-        self.df = pd.DataFrame(columns=self.build_ci_headers())
+        self.ci_df = pd.DataFrame(columns=self.build_ci_headers())
         print("Now recording controller inputs")
 
     def write_controller_inputs(self, controller_inputs):
         """
         Writes the current controller inputs to the dataframe
         """
-        self.df.loc[len(self.df.index)] = controller_inputs
+        formatted_controller_inputs = []
 
-    def stop_recording(self, filename="test.csv"):
+        for i in range(len(controller_inputs)):
+            formatted_controller_inputs.extend(controller_inputs[i])
+
+        self.ci_df.loc[len(self.ci_df.index)] = formatted_controller_inputs
+
+    def stop_recording(self, filename="test"):
         """
         Stops the recording by writing out the current dataframe a CSV to the specified file path
         Args:
             filename : the path to/filename of the csv to be saved
         """
-        self.df.to_csv(filename, encoding='utf-8')
+        filename_rs = filename + "_rs.csv"
+        filename_ci = filename + "_ci.csv"
+
+        if self.rs_df is not None:
+            self.rs_df.to_csv(filename_rs, encoding='utf-8', index=False)
+            self.rs_df = None
+        if self.ci_df is not None:
+            self.ci_df.to_csv(filename_ci, encoding='utf-8', index=False)
+            self.ci_df = None
