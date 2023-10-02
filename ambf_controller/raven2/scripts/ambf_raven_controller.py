@@ -13,7 +13,6 @@ import ambf_xbox_controller as axc
 import ambf_xbox_controller_fake as axf
 import ambf_raven_recorder as arr
 import ambf_raven_reader as arc
-import raven_fk as fk
 import ambf_raven_grasping as arg
 
 '''
@@ -63,33 +62,34 @@ def update_pos_two_arm(controller):
     global DEADZONE
     global DIV
 
-    pos = [[0.0, 0.0],  # x - relative
-           [0.0, 0.0],  # y - relative
-           [0.0, 0.0],  # z - relative
-           [0.0, 0.0]]  # gangle - absolute
+    delta_tm = [np.matrix([[0, 0, 0, 0],
+                          [0, 0, 0, 0],
+                          [0, 0, 0, 0],
+                          [0, 0, 0, 0]], dtype=float),
+                np.matrix([[0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [0, 0, 0, 0]], dtype=float)]
 
-    # Update coordinates for left arm, note x and y are swapped to make controls more intuitive
-    if controller[0][3] == 1 and DEADZONE < abs(controller[0][1]):
-        pos[2][0] = -controller[0][1] / DIV
-    else:
-        if DEADZONE < abs(controller[0][0]):
-            pos[1][0] = -controller[0][0] / DIV
-        if DEADZONE < abs(controller[0][1]):
-            pos[0][0] = -controller[0][1] / DIV
-    # Update coordinates for right arm
-    if controller[1][3] == 1 and DEADZONE < abs(controller[1][1]):
-        pos[2][1] = -controller[1][1] / DIV
-    else:
-        if DEADZONE < abs(controller[1][0]):
-            pos[1][1] = -controller[1][0] / DIV
-        if DEADZONE < abs(controller[1][1]):
-            pos[0][1] = -controller[1][1] / DIV
+    gangle = [0, 0]
+
+    # Update coordinates for both arms
+    for arm in range(2):
+        if controller[arm][3] == 1 and DEADZONE < abs(controller[arm][1]):
+            delta_tm[arm][2, 3] = -controller[arm][1] / DIV
+        else:
+            # note x and y are swapped to make controls more intuitive
+            if DEADZONE < abs(controller[arm][0]):
+                delta_tm[arm][1, 3] = -controller[arm][0] / DIV
+            if DEADZONE < abs(controller[arm][1]):
+                delta_tm[arm][0, 3] = -controller[arm][1] / DIV
+
     # Set gripper angles
-    pos[3][0] = 1 - (controller[0][2] / 4)
+    gangle[0] = 1 - (controller[0][2] / 4)
     # for the right arm gangle needs to be negative, this is to fix a bug somewhere else that I can't find
-    pos[3][1] = -1 + (controller[1][2] / 4)
+    gangle[1] = -1 + (controller[1][2] / 4)
 
-    return pos
+    return delta_tm, gangle
 
 
 def update_pos_one_arm(controller, arm, curr_dh):
@@ -104,10 +104,16 @@ def update_pos_one_arm(controller, arm, curr_dh):
     global DEADZONE
     global DIV
 
-    pos = [[0.0, 0.0],  # x - relative
-           [0.0, 0.0],  # y - relative
-           [0.0, 0.0],  # z - relative
-           [0.0, 0.0]]  # gangle - absolute
+    delta_tm = [np.matrix([[0, 0, 0, 0],
+                          [0, 0, 0, 0],
+                          [0, 0, 0, 0],
+                          [0, 0, 0, 0]], dtype=float),
+                np.matrix([[0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [0, 0, 0, 0],
+                           [0, 0, 0, 0]], dtype=float)]
+
+    gangle = [0, 0]
 
     # Cartesian control of desired arm
     if controller[0][3] == 1 and DEADZONE < abs(controller[0][1]):
@@ -182,12 +188,11 @@ def do(raven, xbc, grasper, recorder=None, reader=None):
     # Sets which mode will be used in manual control
     arm_control = [True, True]
     # True for p5 ik and false for standard ik
-    ik_mode = True
+    ik_mode = False
     # Current DH values for each arm, defaults to home position
     curr_dh = np.array([[1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., 0., 0.52359878],
                         [1.04719755, 1.88495559, -0.03, 2.35619449 - m.pi / 2, 0., -0., 0.52359878]],
                        dtype="float")
-    curr_tm = None
 
     while CONTROL[0]:
 
@@ -276,10 +281,6 @@ def do(raven, xbc, grasper, recorder=None, reader=None):
                 recorder.stop_recording(FILE_OUT)
                 RECORDING = False
 
-            if curr_tm is None:
-                curr_tm = [fk.fwd_kinematics_p5(0, np.array(raven.arms[0].get_all_joint_pos(), dtype="float")),
-                           fk.fwd_kinematics_p5(1, np.array(raven.arms[1].get_all_joint_pos(), dtype="float"))]
-
             # Set which control mode to use
             if controller[2][4] and controller[2][5]:
                 arm_control[0] = True
@@ -312,10 +313,10 @@ def do(raven, xbc, grasper, recorder=None, reader=None):
             # Control both raven arms
             if arm_control[0] and arm_control[1]:
                 # modify position using controller inputs
-                pos = update_pos_two_arm(controller)
+                delta_tm, gangle = update_pos_two_arm(controller)
                 # Plan next move based off of modified cartesian coordinates
-                raven.plan_move(0, pos[0][0], pos[1][0], pos[2][0], pos[3][0], ik_mode, curr_dh)
-                raven.plan_move(1, pos[0][1], pos[1][1], pos[2][1], pos[3][1], ik_mode, curr_dh)
+                raven.plan_move_abs(0, delta_tm[0], gangle[0], ik_mode, curr_dh)
+                raven.plan_move_abs(1, delta_tm[1], gangle[1], ik_mode, curr_dh)
 
                 try:
                     for i in range(2):

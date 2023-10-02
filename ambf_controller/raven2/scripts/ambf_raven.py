@@ -21,9 +21,6 @@ class ambf_raven:
         self._client.connect()
         input("We can see what objects the client has found. Press Enter to continue...")
         print(self._client.get_obj_names())
-        self.homed = [False, False]
-        self.moved = [False, False]
-        self.limited = [False, False]
         self.arms = [self._client.get_obj_handle('raven_2/base_link_L'),
                      self._client.get_obj_handle('raven_2/base_link_R')]
         self.links = []
@@ -31,10 +28,13 @@ class ambf_raven:
             link_names = self.arms[i].get_children_names()
             for j in range(self.arms[i].get_num_of_children()):
                 self.links.append(self._client.get_obj_handle('raven_2/' + link_names[j]))
+
         self.start_jp = np.zeros((2, 7))  # indexed at 0
         self.delta_jp = np.zeros((2, 7))
         self.home_joints = ard.HOME_JOINTS
         self.next_jp = np.zeros((2, 7))
+        self.curr_tm = [0, 0]
+
         self.dance_scale_joints = ard.DANCE_SCALE_JOINTS
         self.loop_rate = ard.LOOP_RATE
         self.raven_joints = ard.RAVEN_JOINTS
@@ -43,11 +43,24 @@ class ambf_raven:
         self.i = 0
         self.speed = 10.00 / self.loop_rate
         self.rampup_speed = 0.5 / self.loop_rate
-        self.finished = False
         self.man_steps = 30
+
+        self.homed = [False, False]
+        self.moved = [False, False]
+        self.finished = False
+        self.limited = [False, False]
 
         print("\nHoming...\n")
         self.home_fast()
+        self.set_curr_tm()
+        print(self.curr_tm)
+
+    def set_curr_tm(self):
+        for i in range(len(self.arms)):
+            for j in range(self.raven_joints):
+                self.start_jp[i][j] = self.arms[i].get_joint_pos(j)
+
+            self.curr_tm[i] = fk.fwd_kinematics(i, self.start_jp[i])
 
     def home_fast(self):
 
@@ -241,7 +254,7 @@ class ambf_raven:
             elif i == 15:
                 self.arms[1].set_joint_effort(i - 9, (np.deg2rad(pos_list[i]) - math.pi / 12) / scale)
 
-    def plan_move(self, arm, x, y, z, gangle, p5=False, home_dh=ard.HOME_DH):
+    def plan_move(self, arm, tm, gangle, p5=False, home_dh=ard.HOME_DH):
         """
         moves the desired robot arm based on inputted changes to cartesian coordinates
         Args:
@@ -261,9 +274,10 @@ class ambf_raven:
         else:
             curr_tm = fk.fwd_kinematics(arm, self.start_jp[arm])
         # print("initial tm :", curr_tm)
-        curr_tm[0, 3] += x
-        curr_tm[1, 3] += y
-        curr_tm[2, 3] += z
+        # curr_tm[0, 3] += x
+        # curr_tm[1, 3] += y
+        # curr_tm[2, 3] += z
+        curr_tm += tm
         if p5:
             jpl = ik.inv_kinematics_p5(arm, curr_tm, gangle, home_dh)
         else:
@@ -274,15 +288,6 @@ class ambf_raven:
             print("Desired cartesian position is out of bounds for Raven2. Will move to max pos.")
         new_jp = jpl[0]
         self.next_jp[arm] = new_jp
-        # for i in range(len(new_jp)):
-            # print("diff: ", new_jp[i]-curr_jp[i])
-        # if arm:
-        #     print("right arm: ", self.next_jp)
-        # else:
-        #     print("left arm: ", self.next_jp)
-
-        # print("fk ", timeit.timeit(lambda: fk.fwd_kinematics_p5(arm, curr_jp), setup="pass",number=1))
-        # print("ik ", timeit.timeit(lambda: ik.inv_kinematics_p5(arm, curr_tm, gangle), setup="pass", number=1))
 
     def plan_move_abs(self, arm, tm, gangle, p5=False, home_dh=ard.HOME_DH):
         """
@@ -295,10 +300,13 @@ class ambf_raven:
             home_dh (array) : array containing home position, or desired postion of the
                 joints not set by cartesian coordinates in inv_kinematics_p5
         """
+        self.start_jp[arm] = self.next_jp[arm]
+        self.curr_tm[arm] += tm
+        print(self.curr_tm[arm])
         if p5:
-            jpl = ik.inv_kinematics_p5(arm, tm, gangle, home_dh)
+            jpl = ik.inv_kinematics_p5(arm, self.curr_tm[arm], gangle, home_dh)
         else:
-            jpl = ik.inv_kinematics(arm, tm, gangle)
+            jpl = ik.inv_kinematics(arm, self.curr_tm[arm], gangle)
         self.limited[arm] = jpl[1]
         if self.limited[arm]:
             print("Desired cartesian position is out of bounds for Raven2. Will move to max pos.")
