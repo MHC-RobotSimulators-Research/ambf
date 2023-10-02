@@ -26,5 +26,5 @@ class ambf_xbox_controller_fake:
 
         return [[lx, ly, lt, lb], [rx, ry, rt, rb], [0, 0, 0, 0, 0, 0]]
 
-    def rumble(self):
+    def rumble(self, left, right, time):
         pass
