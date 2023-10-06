@@ -4,3 +4,6 @@
 [submodule "ambf_utilities/urdf_2_ambf"]
 	path = ambf_utilities/urdf_2_ambf
 	url = https://github.com/adnanmunawar/urdf_2_ambf.git
+[submodule "ambf_controller/raven2/Raven2_standardized_controller"]
+	path = ambf_controller/raven2/Raven2_standardized_controller
+	url = https://github.com/MHC-RobotSimulators-Research/Raven2_standardized_controller.git
