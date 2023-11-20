@@ -9,4 +9,6 @@ multibody configs:
   - "./sensing_grasping/grasper2L-sensors-actuators.yaml" #2
   - "./sensing_grasping/grasper1R-sensors-actuators.yaml" #3
   - "./sensing_grasping/grasper2R-sensors-actuators.yaml" #4
+  - "./sensing_grasping/grasperL-sensors-actuators.yaml" #5
+  - "./sensing_grasping/grasperR-sensors-actuators.yaml" #6
 #  - "../../ambf_models/descriptions/multi-bodies/environments/TexturedGround/env.yaml" #5

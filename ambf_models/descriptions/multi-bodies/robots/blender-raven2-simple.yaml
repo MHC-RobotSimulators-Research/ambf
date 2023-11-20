@@ -1176,7 +1176,7 @@ JOINT link2_L-link3_L:
     z: 0.0
   joint limits:
     high: 0.1
-    low: -0.17
+    low: -0.23
   enable feedback: false
   passive: false
 #  controller:
@@ -1438,7 +1438,7 @@ JOINT link2_R-link3_R:
     z: 0.0
   joint limits:
     high: 0.1
-    low: -0.17
+    low: -0.23
   enable feedback: false
   passive: false
 #  controller:
