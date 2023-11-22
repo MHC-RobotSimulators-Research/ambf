@@ -30,6 +30,7 @@ SENSOR grasper1_L_PS:
   parent: grasper1_L
   visible: True
   visible size: 0.001
+  collision groups: [0]
 
 ACTUATOR grasper1_L_C0:
   name: grasper1_L_C0
@@ -38,6 +39,7 @@ ACTUATOR grasper1_L_C0:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.005, z: 0.0005}
   parent: grasper1_L
+  collision groups: [0]
 
 ACTUATOR grasper1_L_C1:
   name: grasper1_L_C1
@@ -46,6 +48,7 @@ ACTUATOR grasper1_L_C1:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.01, z: 0.0005}
   parent: grasper1_L
+  collision groups: [0]
 
 ACTUATOR grasper1_L_C2:
   name: grasper1_L_C2
@@ -54,6 +57,7 @@ ACTUATOR grasper1_L_C2:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.015, z: 0.0005}
   parent: grasper1_L
+  collision groups: [0]
 
 ACTUATOR grasper1_L_C3:
   name: grasper1_L_C3
@@ -62,6 +66,7 @@ ACTUATOR grasper1_L_C3:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.02, z: 0.0005}
   parent: grasper1_L
+  collision groups: [0]
   
 SENSOR grasper2_L_PS:
   name: grasper2_L_PS
@@ -86,6 +91,7 @@ SENSOR grasper2_L_PS:
   parent: grasper2_L
   visible: True
   visible size: 0.001
+  collision groups: [0]
 
 ACTUATOR grasper2_L_C0:
   name: grasper2_L_C0
@@ -94,6 +100,7 @@ ACTUATOR grasper2_L_C0:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.005, z: 0.0005}
   parent: grasper2_L
+  collision groups: [0]
 
 ACTUATOR grasper2_L_C1:
   name: grasper2_L_C1
@@ -102,6 +109,7 @@ ACTUATOR grasper2_L_C1:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.01, z: 0.0005}
   parent: grasper2_L
+  collision groups: [0]
 
 ACTUATOR grasper2_L_C2:
   name: grasper2_L_C2
@@ -110,6 +118,7 @@ ACTUATOR grasper2_L_C2:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.015, z: 0.0005}
   parent: grasper2_L
+  collision groups: [0]
 
 ACTUATOR grasper2_L_C3:
   name: grasper2_L_C3
@@ -118,3 +127,4 @@ ACTUATOR grasper2_L_C3:
     orientation: {p: 0.0, r: 0.0, y: 0.0}
     position: {x: 0.0015, y: 0.02, z: 0.0005}
   parent: grasper2_L
+  collision groups: [0]
