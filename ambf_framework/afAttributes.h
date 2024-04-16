@@ -53,6 +53,12 @@ typedef unsigned int uint;
 
 namespace ambf {
 
+enum class afStatusFlag{
+    UNDEFINED,
+    TRUE,
+    FALSE,
+};
+
 ///
 /// \brief The afKinematicAttributes struct
 ///
@@ -362,9 +368,11 @@ struct afColorAttributes{
 struct afVisualAttributes{
     afVisualAttributes(){
         m_visible = true;
+        m_meshRemoveDuplicates = afStatusFlag::UNDEFINED;
     }
 
     afPath m_meshFilepath;
+    afStatusFlag m_meshRemoveDuplicates;
     afGeometryType m_geometryType;
     vector<afPrimitiveShapeAttributes> m_primitiveShapes;
     afColorAttributes m_colorAttribs;
@@ -525,6 +533,21 @@ struct afNoiseModelAttribs{
     double m_bias;
 };
 
+struct afMouseControlScales{
+public:
+    afMouseControlScales(){
+        m_pan = 0.01;
+        m_rotate = 0.3;
+        m_arcball = 0.03;
+        m_scroll = 0.1;
+    }
+
+    double m_pan;
+    double m_rotate;
+    double m_scroll;
+    double m_arcball;
+};
+
 ///
 /// \brief The afCameraAttributes struct
 ///
@@ -568,6 +591,7 @@ public:
     uint m_publishDepthInterval;
     afShaderAttributes m_preProcessShaderAttribs;
     afShaderAttributes m_depthComputeShaderAttribs;
+    afMouseControlScales m_mouseControlScales;
     bool m_multiPass;
 
     afImageResolutionAttribs m_publishImageResolution;
@@ -599,10 +623,18 @@ public:
     afLightAttributes(){
         m_spotExponent = 0.7;
         m_cuttoffAngle = 0.7;
+        m_constantAttenuation = 1.0;
+        m_linearAttenuation = 0.0;
+        m_quadraticAttenuation = 0.0;
+        m_attenuationDefined = false;
     }
 
     double m_spotExponent;
     double m_cuttoffAngle;
+    double m_constantAttenuation;
+    double m_linearAttenuation;
+    double m_quadraticAttenuation;
+    bool m_attenuationDefined;
     afVector3d m_direction;
 
     afShadowQualityType m_shadowQuality;

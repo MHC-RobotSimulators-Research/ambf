@@ -174,9 +174,9 @@ public:
 
     static btCollisionShape* createCollisionShape(const afPrimitiveShapeAttributes* a_primitiveShape, double a_margin);
 
-    static btCollisionShape* createCollisionShape(const cMesh* a_collisionMesh, double a_margin, afCollisionMeshShapeType a_meshType);
+    static btCollisionShape* createCollisionShape(cMesh* a_collisionMesh, double a_margin, afCollisionMeshShapeType a_meshType);
 
-    static btCompoundShape* createCollisionShape(const cMultiMesh* a_collisionMesh, double a_margin, afTransform m_inertialOffset, afCollisionMeshShapeType a_meshType);
+    static btCompoundShape* createCollisionShape(cMultiMesh* a_collisionMesh, double a_margin, afTransform m_inertialOffset, afCollisionMeshShapeType a_meshType);
 
     static std::vector<afRayAttributes> createRayAttribs(cMultiMesh* a_contourMesh, double a_range);
 };
@@ -1214,24 +1214,10 @@ public:
     bool createLinksFromLines(btSoftBody* a_sb, std::vector< std::vector<int>>* a_lines, cMesh* a_mesh);
 
     // Copied from btSoftBodyHelpers with few modifications
-    btSoftBody* createFromMesh(btSoftBodyWorldInfo& worldInfo, const btScalar* vertices, int nNodes, const unsigned int* triangles, int ntriangles, bool randomizeConstraints=true);
+    btSoftBody* createFromMesh(btSoftBodyWorldInfo* worldInfo, cMesh* a_mesh, bool randomizeConstraints=true);
 
     //! This method toggles the drawing of skeletal model.
     void toggleSkeletalModelVisibility();
-
-private:
-    // Ptr to scalar vertex arrays of the sofy body
-    std::vector<btScalar> m_verticesPtr;
-
-    // Ptr to Triangles arrays referring to vertices by indices
-    std::vector<unsigned int> m_trianglesPtr;
-
-    // Vertex Tree containing vtx idx's that are repeated for a given vtx
-    std::vector<afVertexTree> m_afVertexTree;
-
-    // Boolean flag to indicate if we have been successful in reducing the mesh.
-    // A reduced mesh should speed up rendering.
-    bool m_meshReductionSuccessful;
 };
 
 
@@ -1929,6 +1915,9 @@ public:
 
 public:
     bool m_cam_pressed;
+
+    afMouseControlScales m_mouseControlScales;
+
     GLFWwindow* m_window;
 
     static GLFWwindow* s_mainWindow;
@@ -2094,6 +2083,18 @@ public:
 
     cGenericLight* getInternalLight();
 
+    double getConstantAttenuation(){return m_spotLight->getAttConstant();}
+
+    double getLinearAttenuation(){return m_spotLight->getAttLinear();}
+
+    double getQuadraticAttenuation(){return m_spotLight->getAttQuadratic();}
+
+    void setConstantAttenuation(double att){m_spotLight->setAttConstant(att);}
+
+    void setLinearAttenuation(double att){m_spotLight->setAttLinear(att);}
+
+    void setQuadraticAttenuation(double att){m_spotLight->setAttQuadratic(att);}
+
 protected:
     cSpotLight* m_spotLight;
 
@@ -2203,7 +2204,7 @@ public:
     int getMaxIterations(){return m_maxIterations;}
 
     // This method returns the current simulation time
-    double getWallTime(){return m_wallClock;}
+    double getWallTime(){return m_wallClock.getCurrentTimeSeconds();}
 
     // This method returns the current simulation time
     double getSimulationTime(){return m_simulationTime;}
@@ -2218,7 +2219,7 @@ public:
     void estimateBodyWrenches();
 
     //! This method updates the simulation over a time interval.
-    virtual void updateDynamics(double a_interval, double a_wallClock=0, double a_loopFreq = 0, int a_numDevices = 0);
+    virtual void updateDynamics(double a_interval, int a_numDevices = 0);
 
     //! This method updates the position and orientation from Bullet models to CHAI3D models.
     virtual void updateSceneObjects();
@@ -2251,7 +2252,9 @@ public:
 
     bool isHeadless();
 
-    int getPhysicsFrequency(){return m_physicsFreq;}
+    int getPhysicsFrequency(){return m_freqCounterPhysics.getFrequency();}
+
+    int getGraphicsFrequency(){return m_freqCounterGraphics.getFrequency();}
 
     int getNumDevices(){return m_numDevices;}
 
@@ -2304,9 +2307,9 @@ public:
 
     cVector3d m_pickedOffset;
 
-    cMesh* m_pickSphere = nullptr;
+    cMultiPoint* m_pickMultiPoint = nullptr;
 
-    cPrecisionClock g_wallClock;
+    cPrecisionClock m_wallClock;
 
     // Vertex Shader Filepath
     afPath m_vsFilePath;
@@ -2330,7 +2333,7 @@ public:
     cFrequencyCounter m_freqCounterGraphics;
 
     // a frequency counter to measure the simulation haptic rate
-    cFrequencyCounter m_freqCounterHaptics;
+    cFrequencyCounter m_freqCounterPhysics;
 
     map<string, afPointCloudPtr> m_pcMap;
 
@@ -2371,18 +2374,13 @@ protected:
     // Integration time step.
     double m_integrationTimeStep;
 
-    // Wall Clock in Secs
-    double m_wallClock;
-
-    // Last Simulation Time
+    // Last Simulation Timebn
     double m_lastSimulationTime;
 
     // Maximum number of iterations.
     int m_integrationMaxIterations;
 
     afWorldPluginManager m_pluginManager;
-
-    int m_physicsFreq = 0;
 
     int m_numDevices = 0;
 

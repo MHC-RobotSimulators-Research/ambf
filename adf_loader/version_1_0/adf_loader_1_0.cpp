@@ -211,6 +211,7 @@ bool ADFUtils::getVisualAttribsFromNode(YAML::Node *a_node, afVisualAttributes *
     YAML::Node& node = *a_node;
 
     YAML::Node meshNode = node["mesh"];
+    YAML::Node meshRemoveDuplicatesNode = node["mesh remove duplicates"];
     YAML::Node shapeNode = node["shape"];
     YAML::Node compoundShapeNode = node["compound shape"];
     YAML::Node geometryNode = node["geometry"];
@@ -258,6 +259,13 @@ bool ADFUtils::getVisualAttribsFromNode(YAML::Node *a_node, afVisualAttributes *
         attribs->m_meshFilepath = localPath / meshNode.as<string>();
         if (!attribs->m_meshFilepath.c_str().empty()){
             attribs->m_geometryType = afGeometryType::MESH;
+
+            if (meshRemoveDuplicatesNode.IsDefined()){
+                if (meshRemoveDuplicatesNode.as<bool>() == true){
+                    attribs->m_meshRemoveDuplicates = afStatusFlag::TRUE;}
+                else{
+                    attribs->m_meshRemoveDuplicates = afStatusFlag::FALSE;}
+            }
         }
         else{
             valid = false;
@@ -1154,6 +1162,7 @@ bool ADFLoader_1_0::loadLightAttribs(YAML::Node *a_node, afLightAttributes *attr
     YAML::Node spotExponentNode = node["spot exponent"];
     YAML::Node shadowQualityNode = node["shadow quality"];
     YAML::Node cuttOffAngleNode = node["cutoff angle"];
+    YAML::Node attenuationNode = node["attenuation"];
 
     bool valid = true;
 
@@ -1206,6 +1215,13 @@ bool ADFLoader_1_0::loadLightAttribs(YAML::Node *a_node, afLightAttributes *attr
         attribs->m_cuttoffAngle = cuttOffAngleNode.as<double>();
     }
 
+    if (attenuationNode.IsDefined()){
+        attribs->m_attenuationDefined = true;
+        if (attenuationNode["constant"].IsDefined()) attribs->m_constantAttenuation = attenuationNode["constant"].as<double>();
+        if (attenuationNode["linear"].IsDefined()) attribs->m_linearAttenuation = attenuationNode["linear"].as<double>();
+        if (attenuationNode["quadratic"].IsDefined()) attribs->m_quadraticAttenuation = attenuationNode["quadratic"].as<double>();
+    }
+
     return valid;
 }
 
@@ -1246,6 +1262,7 @@ bool ADFLoader_1_0::loadCameraAttribs(YAML::Node *a_node, afCameraAttributes *at
     YAML::Node preProcessingShaderNode = node["preprocessing shaders"];
     YAML::Node depthShaderNode = node["depth compute shaders"];
     YAML::Node multiPassNode = node["multipass"];
+    YAML::Node mouseControlMultiplierNode = node["mouse control multipliers"];
 
     bool valid = true;
 
@@ -1355,6 +1372,21 @@ bool ADFLoader_1_0::loadCameraAttribs(YAML::Node *a_node, afCameraAttributes *at
 
     if (multiPassNode.IsDefined()){
         attribs->m_multiPass = multiPassNode.as<bool>();
+    }
+
+    if (mouseControlMultiplierNode.IsDefined()){
+        if (mouseControlMultiplierNode["pan"].IsDefined()){
+            attribs->m_mouseControlScales.m_pan *= mouseControlMultiplierNode["pan"].as<double>();
+        }
+        if (mouseControlMultiplierNode["rotate"].IsDefined()){
+            attribs->m_mouseControlScales.m_rotate *= mouseControlMultiplierNode["rotate"].as<double>();
+        }
+        if (mouseControlMultiplierNode["scroll"].IsDefined()){
+            attribs->m_mouseControlScales.m_scroll *= mouseControlMultiplierNode["scroll"].as<double>();
+        }
+        if (mouseControlMultiplierNode["arcball"].IsDefined()){
+            attribs->m_mouseControlScales.m_arcball *= mouseControlMultiplierNode["arcball"].as<double>();
+        }
     }
 
     return valid;
