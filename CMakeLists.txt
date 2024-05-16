@@ -48,7 +48,9 @@ cmake_minimum_required (VERSION 3.1)
 project (AMBF)
 
 # Set C++ Standard
-set (CMAKE_CXX_STANDARD 11)
+# set (CMAKE_CXX_STANDARD 11)
+# change to 17 for Ubuntu 22.04 support
+set (CMAKE_CXX_STANDARD 17)
 
 # set version info
 file (READ ${PROJECT_SOURCE_DIR}/ambf_framework/version.txt VERSION)
@@ -196,7 +198,9 @@ if (${CMAKE_SYSTEM_NAME} MATCHES Windows)
 # Linux global build options
 elseif (${CMAKE_SYSTEM_NAME} MATCHES Linux)
   list(APPEND COMMON_DEFINITIONS -DLINUX)
-  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=native -Wno-deprecated -std=c++0x")
+  # set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=native -Wno-deprecated -std=c++0x")
+  # change to version 17 for Ubuntu 22.04 support
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -march=native -Wno-deprecated -std=c++17")
   set (CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC -march=native -Wno-deprecated")
 
 # Mac OS X global build options
