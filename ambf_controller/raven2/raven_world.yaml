@@ -1,7 +1,8 @@
 enclosure size: {length: 10.0, width: 10.0, height: 3.0}
 lights: [light1, light2]
 cameras: [camera1, camera2, camera3]
-environment: "../../ambf_models/descriptions/world/checkered_floor.yaml"
+#environment: "../../ambf_models/descriptions/world/checkered_floor.yaml"
+environment: "../../ambf_models/descriptions/world/empty.yaml"
 namespace: /ambf/env/
 max iterations: 50
 gravity: {x: 0.0, y: 0.0, z: -9.81}
@@ -30,11 +31,11 @@ light3:
 
 camera1:
   name: cam_1
-  location: {x: -.5, y: 0.0, z: 0.3}
+  location: {x: -0.615, y: 0.0, z: 0.30}
   look at: {x: 0.0, y: 0.0, z: 0.0}
   up: {x: 0.0, y: 0.0, z: 1.0}
   clipping plane: {near: 0.01, far: 10.0}
-  field view angle: 0.8
+  field view angle: 0.86481064
 
 camera2:
   name: cam_2

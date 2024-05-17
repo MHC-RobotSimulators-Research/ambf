@@ -88,11 +88,11 @@ BODY base_link_L:
   location:
     position:
       x: 0.00014
-      y: 0.1
+      y: 0.07529
       z: 0.0
     orientation:
       r: 1.5708
-      p: -1.1348
+      p: -1.5708
       y: 0.0002
   inertial offset:
     position:
@@ -582,11 +582,11 @@ BODY base_link_R:
   location:
     position:
       x: 0.00014
-      y: -0.1
+      y: -0.07529
       z: 0.0
     orientation:
       r: -1.5708
-      p: 2.0068
+      p: 1.5708
       y: 0.0002
   inertial offset:
     position:
